@@ -1,0 +1,326 @@
+/* ExamPro — UI kit: toasts, modals, rings, sparklines, chips, confetti */
+window.App = window.App || {};
+
+(function () {
+  const U = () => App.u;
+  const UI = {};
+
+  /* ---------------- toasts ---------------- */
+  UI.toast = function (msg, type) {
+    type = type || "ok";
+    let stack = document.getElementById("toast-stack");
+    if (!stack) {
+      stack = document.createElement("div");
+      stack.id = "toast-stack";
+      stack.className = "toast-stack";
+      document.body.appendChild(stack);
+    }
+    const el = document.createElement("div");
+    el.className = "toast " + type;
+    const iconName = type === "ok" ? "check" : type === "err" ? "warn" : "info";
+    el.innerHTML =
+      '<span class="t-ico">' + App.icon(iconName, 15, 2.2) + "</span>" +
+      "<span>" + U().esc(msg) + "</span>";
+    stack.appendChild(el);
+    setTimeout(function () {
+      el.classList.add("out");
+      setTimeout(function () { el.remove(); }, 320);
+    }, 3400);
+  };
+
+  /* ---------------- modals ---------------- */
+  function openModal(html) {
+    closeModal();
+    const veil = document.createElement("div");
+    veil.className = "modal-veil";
+    veil.id = "modal-veil";
+    veil.innerHTML = '<div class="modal" role="dialog" aria-modal="true">' + html + "</div>";
+    veil.addEventListener("mousedown", function (e) { if (e.target === veil) closeModal(); });
+    document.body.appendChild(veil);
+    document.addEventListener("keydown", escClose);
+    return veil;
+  }
+  function escClose(e) { if (e.key === "Escape") closeModal(); }
+  function closeModal() {
+    const v = document.getElementById("modal-veil");
+    if (v) v.remove();
+    document.removeEventListener("keydown", escClose);
+  }
+  UI.closeModal = closeModal;
+
+  UI.confirm = function (opts, onYes) {
+    const veil = openModal(
+      '<div class="modal-head"><div>' +
+      '<div class="modal-title">' + U().esc(opts.title || "Are you sure?") + "</div>" +
+      (opts.desc ? '<div class="modal-sub">' + U().esc(opts.desc) + "</div>" : "") +
+      "</div></div>" +
+      (opts.bodyHtml || "") +
+      '<div class="modal-foot">' +
+      '<button class="btn btn-ghost" data-act="no">Cancel</button>' +
+      '<button class="btn ' + (opts.danger ? "" : "btn-primary") + '" data-act="yes" style="' + (opts.danger ? "background:var(--bad);color:#fff;" : "") + '">' +
+      U().esc(opts.confirmLabel || "Confirm") + "</button>" +
+      "</div>"
+    );
+    veil.querySelector('[data-act="no"]').onclick = closeModal;
+    veil.querySelector('[data-act="yes"]').onclick = function () { closeModal(); if (onYes) onYes(); };
+  };
+
+  UI.prompt = function (opts, onOk) {
+    const veil = openModal(
+      '<div class="modal-head"><div>' +
+      '<div class="modal-title">' + U().esc(opts.title || "Enter value") + "</div>" +
+      (opts.desc ? '<div class="modal-sub">' + U().esc(opts.desc) + "</div>" : "") +
+      "</div></div>" +
+      '<input class="input" id="modal-prompt-input" value="' + U().esc(opts.value || "") + '" placeholder="' + U().esc(opts.placeholder || "") + '" maxlength="80">' +
+      '<div class="modal-foot">' +
+      '<button class="btn btn-ghost" data-act="no">Cancel</button>' +
+      '<button class="btn btn-primary" data-act="yes">' + U().esc(opts.confirmLabel || "Save") + "</button>" +
+      "</div>"
+    );
+    const input = veil.querySelector("#modal-prompt-input");
+    input.focus();
+    input.select();
+    function submit() {
+      const v = input.value.trim();
+      if (!v) { input.focus(); return; }
+      closeModal();
+      if (onOk) onOk(v);
+    }
+    veil.querySelector('[data-act="no"]').onclick = closeModal;
+    veil.querySelector('[data-act="yes"]').onclick = submit;
+    input.addEventListener("keydown", function (e) { if (e.key === "Enter") submit(); });
+  };
+
+  UI.customModal = openModal;
+
+  /* ---------------- bank icon / tone picker ---------------- */
+  /* Renders a bank's badge at any size — the single place that decides how a
+     bank looks, so the dashboard, sidebar, study header and palette agree. */
+  UI.bankBadge = function (bankName, size, cls, attrs) {
+    const icon = App.store.bankIcon(bankName);
+    const tone = App.store.bankTone(bankName);
+    return '<span class="bank-badge tone-' + tone + (cls ? " " + cls : "") + '"' +
+      (attrs ? " " + attrs : "") + ">" + App.icon(icon, size || 20) + "</span>";
+  };
+
+  /* A badge that opens the picker when clicked — wire the container with
+     UI.wireBankBadges() to activate. */
+  UI.editableBankBadge = function (bankName, size, cls) {
+    return UI.bankBadge(bankName, size, "editable" + (cls ? " " + cls : ""),
+      'data-look="' + U().esc(bankName) + '" role="button" tabindex="0" title="Change icon"');
+  };
+
+  /* Delegated handler for every editable badge inside `root`. */
+  UI.wireBankBadges = function (root, onSaved) {
+    U().on(root, "click", "[data-look]", function (e, el) {
+      e.stopPropagation();
+      UI.pickBankLook(el.dataset.look, onSaved);
+    });
+    U().on(root, "keydown", "[data-look]", function (e, el) {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        UI.pickBankLook(el.dataset.look, onSaved);
+      }
+    });
+  };
+
+  UI.pickBankLook = function (bankName, onSaved) {
+    const u = U();
+    let icon = App.store.bankIcon(bankName);
+    let tone = App.store.bankTone(bankName);
+
+    const veil = openModal(
+      '<div class="modal-head"><div>' +
+      '<div class="modal-title">Bank icon</div>' +
+      '<div class="modal-sub">' + u.esc(bankName) + "</div></div>" +
+      '<button class="icon-btn" data-x>' + App.icon("x", 15) + "</button></div>" +
+
+      '<div class="picker-preview"><span class="bank-badge lg tone-' + tone + '" id="pick-preview">' +
+      App.icon(icon, 30) + "</span>" +
+      '<div><div class="pp-name">' + u.esc(bankName) + "</div>" +
+      '<div class="pp-sub">This is how the bank appears everywhere.</div></div></div>' +
+
+      "<label class='field-lbl'>Colour</label>" +
+      '<div class="tone-row" id="pick-tones">' +
+      App.bankTones.map(function (t) {
+        return '<button class="tone-dot tone-' + t + (t === tone ? " on" : "") +
+          '" data-tone="' + t + '" aria-label="' + t + ' colour"></button>';
+      }).join("") + "</div>" +
+
+      "<label class='field-lbl' style='margin-top:14px'>Icon</label>" +
+      '<div class="icon-grid" id="pick-icons">' +
+      App.bankIcons.map(function (n) {
+        return '<button class="icon-cell' + (n === icon ? " on" : "") + '" data-icon="' + n +
+          '" title="' + n + '">' + App.icon(n, 19) + "</button>";
+      }).join("") + "</div>" +
+
+      '<div class="modal-foot">' +
+      '<button class="btn btn-ghost" data-x>Cancel</button>' +
+      '<button class="btn btn-primary" id="pick-save">' + App.icon("check", 15) + "Save</button>" +
+      "</div>"
+    );
+
+    const preview = veil.querySelector("#pick-preview");
+    function repaint() {
+      preview.className = "bank-badge lg tone-" + tone;
+      preview.innerHTML = App.icon(icon, 30);
+    }
+
+    veil.querySelectorAll("[data-tone]").forEach(function (b) {
+      b.onclick = function () {
+        tone = b.dataset.tone;
+        veil.querySelectorAll("[data-tone]").forEach(function (o) { o.classList.toggle("on", o === b); });
+        repaint();
+      };
+    });
+    veil.querySelectorAll("[data-icon]").forEach(function (b) {
+      b.onclick = function () {
+        icon = b.dataset.icon;
+        veil.querySelectorAll("[data-icon]").forEach(function (o) { o.classList.toggle("on", o === b); });
+        repaint();
+      };
+    });
+
+    veil.querySelectorAll("[data-x]").forEach(function (b) { b.onclick = closeModal; });
+    veil.querySelector("#pick-save").onclick = function () {
+      App.store.setBankLook(bankName, icon, tone);
+      closeModal();
+      UI.toast("Icon updated.", "ok");
+      if (onSaved) onSaved();
+    };
+  };
+
+  /* ---------------- svg ring ---------------- */
+  UI.ring = function (pct, size, stroke, colorVar) {
+    pct = U().clamp(pct, 0, 100);
+    const r = (size - stroke) / 2;
+    const c = (2 * Math.PI * r).toFixed(1);
+    const off = (c - (c * pct) / 100).toFixed(1);
+    const color = colorVar || "var(--acc)";
+    return (
+      '<svg class="ring-svg" width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + " " + size + '">' +
+      '<circle class="ring-track" cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" stroke-width="' + stroke + '"/>' +
+      '<circle class="ring-val" cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="' + stroke +
+      '" stroke-linecap="round" stroke-dasharray="' + c + '" stroke-dashoffset="' + off +
+      '" transform="rotate(-90 ' + size / 2 + " " + size / 2 + ')"/>' +
+      "</svg>"
+    );
+  };
+
+  /* ---------------- sparkline ---------------- */
+  UI.sparkline = function (values, w, h) {
+    w = w || 96; h = h || 26;
+    if (!values || !values.length) return "";
+    const max = 100, min = 0;
+    const stepX = values.length > 1 ? w / (values.length - 1) : w;
+    const pts = values.map(function (v, i) {
+      const x = (i * stepX).toFixed(1);
+      const y = (h - 3 - ((v - min) / (max - min)) * (h - 6)).toFixed(1);
+      return x + "," + y;
+    });
+    const last = pts[pts.length - 1].split(",");
+    return (
+      '<svg class="spark" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + " " + h + '" aria-hidden="true">' +
+      '<polyline points="' + pts.join(" ") + '" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>' +
+      '<circle cx="' + last[0] + '" cy="' + last[1] + '" r="2.6" fill="var(--acc)"/>' +
+      "</svg>"
+    );
+  };
+
+  /* ---------------- question media ---------------- */
+  /* Images, video and audio for a question — one implementation shared by the
+     study, exam, review and results cards. Anything that fails to load hides
+     itself rather than leaving a broken frame. */
+  UI.media = function (q) {
+    if (!q) return "";
+    const u = U();
+    const hide = " onerror=\"this.parentElement.style.display='none'\"";
+    let html = "";
+
+    (q.images || []).forEach(function (src) {
+      html += '<div class="qcard-img"><img src="' + u.esc(src) + '" alt="Question graphic" loading="lazy"' + hide + "></div>";
+    });
+    (q.videos || []).forEach(function (src) {
+      html += '<div class="qcard-video"><video controls playsinline preload="metadata" src="' + u.esc(src) + '"' + hide + "></video></div>";
+    });
+    (q.audios || []).forEach(function (src) {
+      html += '<div class="qcard-audio"><audio controls preload="none" src="' + u.esc(src) + '"' + hide + "></audio></div>";
+    });
+
+    return html ? '<div class="q-media">' + html + "</div>" : "";
+  };
+
+  /* ---------------- question type chips ---------------- */
+  UI.typeChip = function (type) {
+    if (type === "multiple") return '<span class="chip chip-warn">' + App.icon("layers", 11, 2.2) + "Multi-choice</span>";
+    if (type === "matching") return '<span class="chip chip-teal">' + App.icon("link", 11, 2.2) + "Matching</span>";
+    return '<span class="chip chip-acc">' + App.icon("check", 11, 2.4) + "Single choice</span>";
+  };
+
+  UI.typeLabel = function (type) {
+    return type === "multiple" ? "Multi-choice" : type === "matching" ? "Matching" : "Single choice";
+  };
+
+  /* ---------------- empty state ---------------- */
+  UI.empty = function (opts) {
+    return (
+      '<div class="empty rise">' +
+      '<div class="e-ico">' + App.icon(opts.icon || "book", 24) + "</div>" +
+      '<div class="e-t">' + U().esc(opts.title || "Nothing here yet") + "</div>" +
+      '<div class="e-s">' + U().esc(opts.desc || "") + "</div>" +
+      (opts.actionsHtml ? '<div class="e-actions">' + opts.actionsHtml + "</div>" : "") +
+      "</div>"
+    );
+  };
+
+  /* ---------------- confetti (tiny canvas burst) ---------------- */
+  UI.confetti = function () {
+    let canvas = document.getElementById("confetti-canvas");
+    if (!canvas) {
+      canvas = document.createElement("canvas");
+      canvas.id = "confetti-canvas";
+      document.body.appendChild(canvas);
+    }
+    const ctx = canvas.getContext && canvas.getContext("2d");
+    if (!ctx) return; // canvas unsupported — skip the celebration quietly
+    canvas.width = innerWidth;
+    canvas.height = innerHeight;
+    const colors = ["#6366f1", "#8b5cf6", "#2ec58f", "#f0b429", "#2cc3d1", "#f16b80"];
+    const parts = [];
+    for (let i = 0; i < 140; i++) {
+      parts.push({
+        x: innerWidth / 2 + (Math.random() - 0.5) * innerWidth * 0.35,
+        y: innerHeight * 0.28,
+        vx: (Math.random() - 0.5) * 11,
+        vy: -(Math.random() * 10 + 4),
+        s: Math.random() * 7 + 3,
+        r: Math.random() * Math.PI,
+        vr: (Math.random() - 0.5) * 0.25,
+        c: colors[(Math.random() * colors.length) | 0],
+        o: 1
+      });
+    }
+    let frames = 0;
+    (function tick() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+      parts.forEach(function (p) {
+        p.vy += 0.28; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+        if (frames > 55) p.o -= 0.03;
+        if (p.y < canvas.height + 20 && p.o > 0) alive = true;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.o);
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.r);
+        ctx.fillStyle = p.c;
+        ctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 0.62);
+        ctx.restore();
+      });
+      frames++;
+      if (alive && frames < 200) requestAnimationFrame(tick);
+      else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    })();
+  };
+
+  App.ui = UI;
+})();

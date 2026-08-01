@@ -1,0 +1,279 @@
+{
+  "name": "ExamPro Feature Showcase",
+  "description": "The same bank as the .md twin, in the JSON shape the importer accepts. Paste into Import → JSON.",
+  "exportedAt": "2026-07-31T09:08:11.061Z",
+  "questions": [
+    {
+      "id": 1,
+      "question": "Single choice: which page runs a timed, scored simulation?",
+      "type": "single",
+      "options": [
+        "The Study page",
+        "The Exam page",
+        "The Import page",
+        "The Progress page"
+      ],
+      "correctIndices": [
+        1
+      ],
+      "leftItems": [],
+      "rightItems": [],
+      "correctAnswers": {},
+      "images": [],
+      "audios": [],
+      "videos": []
+    },
+    {
+      "id": 2,
+      "question": "True or False: revealing an answer on the Study page changes your review schedule.",
+      "type": "single",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correctIndices": [
+        1
+      ],
+      "leftItems": [],
+      "rightItems": [],
+      "correctAnswers": {},
+      "images": [],
+      "audios": [],
+      "videos": []
+    },
+    {
+      "id": 3,
+      "question": "Select all that apply: which of these does the Progress page show?",
+      "type": "multiple",
+      "options": [
+        "Score by attempt",
+        "A study-activity heatmap",
+        "Upcoming review forecast",
+        "Your browser history",
+        "Weak spots you keep missing"
+      ],
+      "correctIndices": [
+        0,
+        1,
+        2,
+        4
+      ],
+      "leftItems": [],
+      "rightItems": [],
+      "correctAnswers": {},
+      "images": [],
+      "audios": [],
+      "videos": []
+    },
+    {
+      "id": 4,
+      "question": "Choose two: which grades push a card further into the future?",
+      "type": "multiple",
+      "options": [
+        "Again",
+        "Hard",
+        "Good",
+        "Easy"
+      ],
+      "correctIndices": [
+        2,
+        3
+      ],
+      "leftItems": [],
+      "rightItems": [],
+      "correctAnswers": {},
+      "images": [],
+      "audios": [],
+      "videos": []
+    },
+    {
+      "id": 5,
+      "question": "Matching: match each page with what it is for.",
+      "type": "matching",
+      "options": [],
+      "correctIndices": [],
+      "leftItems": [
+        "Definition A: Timed, scored simulation with a countdown",
+        "Definition B: Questions and answers side by side",
+        "Definition C: One card at a time, graded by recall",
+        "Definition D: Trends, retention and weak spots"
+      ],
+      "rightItems": [
+        "Exam",
+        "Study",
+        "Review",
+        "Progress"
+      ],
+      "correctAnswers": {
+        "0": "Exam",
+        "1": "Study",
+        "2": "Review",
+        "3": "Progress"
+      },
+      "images": [],
+      "audios": [],
+      "videos": []
+    },
+    {
+      "id": 6,
+      "question": "Options can be referenced by letter in the key. Which one is correct here?",
+      "type": "single",
+      "options": [
+        "Alpha",
+        "Bravo",
+        "Charlie",
+        "Delta"
+      ],
+      "correctIndices": [
+        2
+      ],
+      "leftItems": [],
+      "rightItems": [],
+      "correctAnswers": {},
+      "images": [],
+      "audios": [],
+      "videos": []
+    },
+    {
+      "id": 7,
+      "question": "Answers containing commas are not split on the comma. Which describes an OBS?",
+      "type": "single",
+      "options": [
+        "A unit, its descendants, and its ancestors",
+        "A single project only",
+        "A financial period",
+        "A resource rate matrix"
+      ],
+      "correctIndices": [
+        0
+      ],
+      "leftItems": [],
+      "rightItems": [],
+      "correctAnswers": {},
+      "images": [],
+      "audios": [],
+      "videos": []
+    },
+    {
+      "id": 8,
+      "question": "Choose the right word with the definition: the interval multiplier SM-2 adjusts each time you grade a card.",
+      "type": "single",
+      "options": [
+        "Ease factor",
+        "Lapse count",
+        "Retention rate",
+        "Pass threshold"
+      ],
+      "correctIndices": [
+        0
+      ],
+      "leftItems": [],
+      "rightItems": [],
+      "correctAnswers": {},
+      "images": [],
+      "audios": [],
+      "videos": []
+    },
+    {
+      "id": 9,
+      "question": "This question is numbered 1 again, and that is fine.",
+      "type": "single",
+      "options": [
+        "The importer merges blocks and renumbers them",
+        "The importer throws an error",
+        "Only the first block is kept"
+      ],
+      "correctIndices": [
+        0
+      ],
+      "leftItems": [],
+      "rightItems": [],
+      "correctAnswers": {},
+      "images": [],
+      "audios": [],
+      "videos": []
+    },
+    {
+      "id": 10,
+      "question": "Which answer-key styles does the parser accept?",
+      "type": "multiple",
+      "options": [
+        "A markdown table",
+        "A - Q1: answer list",
+        "Letters like B or c)",
+        "Only one fixed format"
+      ],
+      "correctIndices": [
+        0,
+        1,
+        2
+      ],
+      "leftItems": [],
+      "rightItems": [],
+      "correctAnswers": {},
+      "images": [],
+      "audios": [],
+      "videos": []
+    },
+    {
+      "id": 11,
+      "question": "Media: an image attaches with standard markdown image syntax.",
+      "type": "single",
+      "options": [
+        "Yes — the image renders above the options",
+        "No — images are stripped out"
+      ],
+      "correctIndices": [
+        0
+      ],
+      "leftItems": [],
+      "rightItems": [],
+      "correctAnswers": {},
+      "images": [
+        "Exams/media/diagram.svg"
+      ],
+      "audios": [],
+      "videos": []
+    },
+    {
+      "id": 12,
+      "question": "Media: audio attaches with an [audio: file] tag.",
+      "type": "single",
+      "options": [
+        "Yes — the card renders a player",
+        "No — audio is unsupported"
+      ],
+      "correctIndices": [
+        0
+      ],
+      "leftItems": [],
+      "rightItems": [],
+      "correctAnswers": {},
+      "images": [],
+      "audios": [
+        "Exams/media/tone.wav"
+      ],
+      "videos": []
+    },
+    {
+      "id": 13,
+      "question": "Media: video attaches the same way, with a [video: file] tag.",
+      "type": "single",
+      "options": [
+        "Yes — an inline player appears",
+        "No — only images and audio work"
+      ],
+      "correctIndices": [
+        0
+      ],
+      "leftItems": [],
+      "rightItems": [],
+      "correctAnswers": {},
+      "images": [],
+      "audios": [],
+      "videos": [
+        "Exams/media/intro.mp4"
+      ]
+    }
+  ]
+}

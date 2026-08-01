@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 200" width="480" height="200" role="img" aria-label="Spaced repetition intervals">
+  <rect width="480" height="200" rx="12" fill="#f7f8fc"/>
+  <text x="24" y="34" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700" fill="#0f1424">Spaced repetition intervals</text>
+  <line x1="24" y1="150" x2="456" y2="150" stroke="#c9cede" stroke-width="2" stroke-linecap="round"/>
+  <rect x="46" y="116" width="46" height="34" rx="6" fill="#6366f1" opacity="0.58"/>
+  <text x="69" y="168" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="600" fill="#6b7490">1d</text>
+  <rect x="130" y="98" width="46" height="52" rx="6" fill="#6366f1" opacity="0.65"/>
+  <text x="153" y="168" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="600" fill="#6b7490">3d</text>
+  <rect x="214" y="82" width="46" height="68" rx="6" fill="#6366f1" opacity="0.71"/>
+  <text x="237" y="168" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="600" fill="#6b7490">6d</text>
+  <rect x="298" y="62" width="46" height="88" rx="6" fill="#6366f1" opacity="0.79"/>
+  <text x="321" y="168" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="600" fill="#6b7490">14d</text>
+  <rect x="382" y="46" width="46" height="104" rx="6" fill="#6366f1" opacity="0.85"/>
+  <text x="405" y="168" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="600" fill="#6b7490">30d</text>
+</svg>

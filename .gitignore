@@ -1,0 +1,18 @@
+# ExamPro — keep personal study material out of version control.
+# Anything you drop into Exams/ is ignored by default, except the app's own
+# demo content (the Feature Showcase bank and its sample media), so real
+# question banks — like your own course/exam notes — never get committed.
+Exams/*
+!Exams/ExamPro Feature Showcase.md
+!Exams/ExamPro Feature Showcase.json
+!Exams/media
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# local-only scratch files
+*.local.*

@@ -6,7 +6,10 @@
 
 **Import any question bank. Study it with spaced repetition. Pass the real thing.**
 
+### [**Try the live demo →**](https://amerzuher.github.io/Exam-Simulator/)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-6366f1.svg)](LICENSE)
+[![Live demo](https://img.shields.io/badge/demo-live-10b981)](https://amerzuher.github.io/Exam-Simulator/)
 ![No build step](https://img.shields.io/badge/build%20step-none-10b981)
 ![Zero dependencies](https://img.shields.io/badge/dependencies-zero-10b981)
 ![Vanilla JS](https://img.shields.io/badge/stack-HTML%20%C2%B7%20CSS%20%C2%B7%20JS-f59e0b)
@@ -121,14 +124,15 @@ build step, no account, no tracking. Everything is stored in your browser.
 No install, no dependencies, no build step.
 
 ```bash
-git clone https://github.com/yourusername/exampro.git
-cd exampro
+git clone https://github.com/AmerZuher/Exam-Simulator.git
+cd Exam-Simulator
 ```
 
 Then pick one:
 
 | Method                | How                                                                                                                                                                                                                                                                                                                                 |
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Try it online**     | Skip setup entirely — the live build is hosted at **[amerzuher.github.io/Exam-Simulator](https://amerzuher.github.io/Exam-Simulator/)**.                                                                                                                                                                                          |
 | **Just open it**      | Double-click `index.html`. A tiny guided sample loads automatically.                                                                                                                                                                                                                                                                |
 | **Any static server** | `python3 -m http.server 8080` (or any static file server) from the project root, then visit `http://localhost:8080`. Serving over HTTP lets the app auto-load the full bundled sample set, including `Exams/ExamPro Feature Showcase.md` — a bank built specifically to demonstrate every supported question type and media format. |
 
@@ -278,12 +282,15 @@ migration path to another browser or machine — there is no other kind of
 It's a static site, so any static host works — GitHub Pages, Netlify, Vercel,
 Cloudflare Pages, or just a folder on any web server:
 
-```bash
-# GitHub Pages, from the repo root
-git checkout -b gh-pages
-git push origin gh-pages
-# then enable Pages for that branch in the repo settings
-```
+**GitHub Pages**, straight from your existing branch, no extra branch needed:
+
+1. Push to your repo's default branch (`master` or `main`)
+2. Repo **Settings → Pages**
+3. **Build and deployment → Source:** `Deploy from a branch`
+4. **Branch:** your default branch, folder `/ (root)` → **Save**
+5. GitHub builds and serves it at `https://<you>.github.io/<repo>/` within a
+   minute or two — the banner at the top of the Pages settings page confirms
+   the URL once it's live
 
 Serving over HTTP (rather than `file://`) is what enables auto-loading the
 bundled sample banks and the PWA service worker — both are optional, the app

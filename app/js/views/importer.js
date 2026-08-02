@@ -6,6 +6,7 @@ App.views = App.views || {};
   const View = { title: "Import", sub: "Add or extend question banks" };
 
   let format = "md";   // "md" | "json"
+  let blockingErrors = 0;   // count of severity:"error" diagnostics for the current content — gates the Save button
 
   const MD_PLACEHOLDER =
     "### 1. Your first question&#10;- [ ] Option A&#10;- [ ] Option B&#10;...&#10;" +
@@ -23,6 +24,18 @@ App.views = App.views || {};
   };
 
   /* ---------------- JSON bank parsing ---------------- */
+
+  function findDuplicates(list) {
+    const seen = {};
+    const dups = [];
+    list.forEach(function (v) {
+      const n = String(v || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+      if (!n) return;
+      if (seen[n]) { if (dups.indexOf(v) === -1) dups.push(v); }
+      else seen[n] = true;
+    });
+    return dups;
+  }
 
   /* Fills in whatever a hand-written question omits, so authoring JSON by hand
      works as well as re-importing an export. */
@@ -82,18 +95,30 @@ App.views = App.views || {};
         if (!q.leftItems.length) { warnings.push({ msg: label + ": matching question has no leftItems — skipped." }); return; }
         if (!Object.keys(q.correctAnswers).length) warnings.push({ msg: label + ": no correctAnswers map — matches will be blank." });
         if (q.rightItems.length && q.leftItems.length !== q.rightItems.length) {
-          warnings.push({ msg: label + ": " + q.rightItems.length + " rightItems but " + q.leftItems.length + " leftItems — matching needs exactly one option per definition." });
+          warnings.push({ severity: "error", msg: label + ": " + q.rightItems.length + " rightItems but " + q.leftItems.length + " leftItems — matching needs exactly one option per definition." });
+        }
+        const rightDups = findDuplicates(q.rightItems);
+        if (rightDups.length) {
+          warnings.push({ severity: "error", msg: label + ": duplicate rightItems text (\"" + rightDups.join("\", \"") + "\") — grading can't tell identical options apart." });
         }
         // grading does an exact string compare against rightItems, so any
         // correctAnswers value absent from rightItems will never grade correct.
+        let exactCount = 0;
         Object.keys(q.correctAnswers).forEach(function (k) {
           const v = q.correctAnswers[k];
           if (q.rightItems.length && q.rightItems.indexOf(v) === -1) {
             warnings.push({ msg: label + ": correctAnswers[" + k + "] (\"" + v + "\") doesn't exactly match any rightItems entry — it will never grade correct." });
-          }
+          } else exactCount++;
         });
+        if (q.rightItems.length && q.leftItems.length && Object.keys(q.correctAnswers).length && !exactCount) {
+          warnings.push({ severity: "error", msg: label + ": none of the correctAnswers values matched a rightItems entry exactly — every row will grade incorrect." });
+        }
       } else {
         if (q.options.length < 2) { warnings.push({ msg: label + ": fewer than two options — skipped." }); return; }
+        const optDups = findDuplicates(q.options);
+        if (optDups.length) {
+          warnings.push({ severity: "error", msg: label + ": duplicate option text (\"" + optDups.join("\", \"") + "\") — grading can't tell identical options apart." });
+        }
         if (!Array.isArray(raw.correctIndices) || !raw.correctIndices.length) {
           warnings.push({ msg: label + ": no correctIndices — defaulted to the first option." });
         }
@@ -253,6 +278,16 @@ App.views = App.views || {};
     reader.readAsText(f);
   }
 
+  /* Keeps the "Parse & save bank" button in sync with the last computed
+     error count — called after every diagnostics refresh. */
+  function setSaveGate(root, errorCount) {
+    blockingErrors = errorCount;
+    const go = root.querySelector("#import-go");
+    if (!go) return;
+    go.disabled = errorCount > 0;
+    go.title = errorCount > 0 ? "Fix " + errorCount + " error(s) below before importing." : "";
+  }
+
   function updateDiag(root) {
     const box = root.querySelector("#import-diag");
     const ta = root.querySelector("#import-content");
@@ -260,7 +295,7 @@ App.views = App.views || {};
     if (!box || !ta) return;
 
     const text = ta.value;
-    if (!text.trim()) { box.style.display = "none"; box.innerHTML = ""; return; }
+    if (!text.trim()) { box.style.display = "none"; box.innerHTML = ""; setSaveGate(root, 0); return; }
 
     const sniffed = sniffFormat(text);
     if (sniffed && sniffed !== format) { setFormat(root, sniffed); return; }
@@ -271,21 +306,37 @@ App.views = App.views || {};
         const res = parseJsonBank(text);
         const types = { single: 0, multiple: 0, matching: 0 };
         res.questions.forEach(function (q) { types[q.type]++; });
+        const errors = res.warnings.filter(function (w) { return w.severity === "error"; });
+        const soft = res.warnings.filter(function (w) { return w.severity !== "error"; });
         p = {
           blocks: 1, total: res.questions.length, types: types,
-          warnings: res.warnings.slice(0, 24), warningCount: res.warnings.length,
+          errors: errors, errorCount: errors.length,
+          warnings: soft.slice(0, 24), warningCount: soft.length,
           blockLabel: res.name ? "“" + res.name + "”" : "1"
         };
       } catch (e) {
         box.style.display = "";
         box.innerHTML = '<div class="warn-item" style="color:var(--bad);background:var(--bad-soft);border-color:var(--bad-line)">' +
           App.icon("warn", 13, 2.2) + "<span>" + App.u.esc(e.message) + "</span></div>";
+        setSaveGate(root, 1);
         return;
       }
     } else {
       p = App.parser.preview(text);
     }
-    if (!p) { box.style.display = "none"; return; }
+    if (!p) { box.style.display = "none"; setSaveGate(root, 0); return; }
+
+    setSaveGate(root, p.errorCount || 0);
+
+    const errHtml = p.errorCount
+      ? '<div class="warn-list" style="margin-bottom:8px">' +
+        '<div class="warn-item" style="color:var(--bad);background:var(--bad-soft);border-color:var(--bad-line);font-weight:700">' +
+        App.icon("warn", 13, 2.2) + "<span>" + p.errorCount + " error(s) must be fixed before this bank can be imported:</span></div>" +
+        p.errors.map(function (w) {
+          return '<div class="warn-item" style="color:var(--bad);background:var(--bad-soft);border-color:var(--bad-line)">' +
+            App.icon("warn", 13, 2.2) + "<span>" + App.u.esc(w.msg) + "</span></div>";
+        }).join("") + "</div>"
+      : "";
 
     const warnHtml = p.warningCount
       ? '<div class="warn-list">' + p.warnings.map(function (w) {
@@ -293,8 +344,8 @@ App.views = App.views || {};
         }).join("") +
         (p.warningCount > p.warnings.length ? '<div class="warn-item">' + App.icon("info", 13, 2.2) + "<span>…and " + (p.warningCount - p.warnings.length) + " more</span></div>" : "") +
         "</div>"
-      : '<div class="warn-item" style="color:var(--ok);background:var(--ok-soft);border-color:var(--ok-line)">' + App.icon("check", 13, 2.4) +
-        "<span>" + (format === "json" ? "Valid bank — every question has options and an answer." : "Clean parse — every answer key matched its options.") + "</span></div>";
+      : (p.errorCount ? "" : '<div class="warn-item" style="color:var(--ok);background:var(--ok-soft);border-color:var(--ok-line)">' + App.icon("check", 13, 2.4) +
+        "<span>" + (format === "json" ? "Valid bank — every question has options and an answer." : "Clean parse — every answer key matched its options.") + "</span></div>");
 
     box.style.display = "";
     box.innerHTML =
@@ -303,7 +354,7 @@ App.views = App.views || {};
       (format === "json" ? "Source bank" : "Document sections") + "</div></div>" +
       '<div class="diag-tile"><div class="dt-n">' + p.total + '</div><div class="dt-l">Questions parsed</div></div>' +
       '<div class="diag-tile"><div class="dt-n" style="font-size:13px;line-height:2">' + p.types.single + " single · " + p.types.multiple + " multi · " + p.types.matching + ' match</div><div class="dt-l">Type breakdown</div></div>' +
-      "</div>" + warnHtml;
+      "</div>" + errHtml + warnHtml;
   }
 
   function doImport(root) {
@@ -314,6 +365,7 @@ App.views = App.views || {};
 
     if (!text.trim()) { App.ui.toast("Paste or drop some content first.", "err"); return; }
     if (mode === "append" && !target) { App.ui.toast("Choose a destination bank.", "err"); return; }
+    if (blockingErrors > 0) { App.ui.toast("Fix the " + blockingErrors + " error(s) shown in diagnostics first.", "err"); return; }
 
     let res;
     if (format === "json") {

@@ -189,6 +189,21 @@ window.App = window.App || {};
     return idx >= 0 && idx < 26 ? idx : -1;
   }
 
+  /* Normalized-duplicate text within a list of options — grading can't tell
+     two identically-worded choices apart, so this always signals a broken
+     question rather than a merely sloppy one. */
+  function findDuplicates(list) {
+    const seen = {};
+    const dups = [];
+    list.forEach(function (v) {
+      const n = norm(v);
+      if (!n) return;
+      if (seen[n]) { if (dups.indexOf(v) === -1) dups.push(v); }
+      else seen[n] = true;
+    });
+    return dups;
+  }
+
   /* Word-overlap fallback scoring (stop words removed) — used only when
      exact/containment matching fails for a value. */
   const STOP_WORDS = { and: 1, or: 1, the: 1, a: 1, an: 1, of: 1, to: 1, in: 1, for: 1, on: 1, with: 1, is: 1, are: 1, by: 1, at: 1, as: 1, vs: 1 };
@@ -282,10 +297,15 @@ cur = {
       const defs = extractDefinitions(line);
       if (defs) { defs.forEach(function (d) { cur.leftItems.push(d); }); continue; }
 
-      // option bullets
-      const optMatch = line.match(/^[-*+]\s*\[\s*[xX]?\s*\]\s*(.+)$/) || line.match(/^[-*+]\s+(\S.*)$/);
+      // option bullets: "- [ ] text" / "- text", and letter-enumerated
+      // fallbacks ("A) text", "(A) text", "A. text", "A: text") for banks
+      // that skip the dash bullet — otherwise those lines were invisible to
+      // the parser and the whole question silently got dropped.
+      const optMatch = line.match(/^[-*+]\s*\[\s*[xX]?\s*\]\s*(.+)$/) ||
+        line.match(/^[-*+]\s+(\S.*)$/) ||
+        line.match(/^\(?([A-Z])[.):]\s+(\S.*)$/);
       if (optMatch) {
-        const txt = stripMd(optMatch[1]);
+        const txt = stripMd(optMatch[2] != null ? optMatch[2] : optMatch[1]);
         if (txt && !/^(definition|step)\s+[a-z0-9]+\s*:/i.test(txt)) cur.options.push(txt);
       }
     }
@@ -314,13 +334,24 @@ cur = {
 
         // The UI renders one dropdown per definition, populated with every
         // option — a mismatched count means some options never appear (or
-        // some definitions get no distinct slot), so flag it plainly.
+        // some definitions get no distinct slot), so this is a hard error,
+        // not a cosmetic one.
         if (q.rightItems.length && q.leftItems.length !== q.rightItems.length) {
           warnings.push({
             qid: q.origId,
+            severity: "error",
             msg: label + ": " + q.rightItems.length + " option(s) but " + q.leftItems.length +
               " definition(s) parsed — matching needs exactly one option per definition. " +
               "Check that every \"Definition X:\" is on its own line rather than run together in one paragraph."
+          });
+        }
+
+        const rightDups = findDuplicates(q.rightItems);
+        if (rightDups.length) {
+          warnings.push({
+            qid: q.origId,
+            severity: "error",
+            msg: label + ": duplicate option text (\"" + rightDups.join("\", \"") + "\") — grading can't tell identical options apart."
           });
         }
 
@@ -330,11 +361,13 @@ cur = {
         // exact option text on a normalized match; warn otherwise.
         const vals = splitAnswerValues(q.answerText, true);
         const rightNorm = q.rightItems.map(norm);
+        let exactCount = 0;
         vals.forEach(function (v, idx) {
           if (idx >= q.leftItems.length) return;
           const ri = rightNorm.indexOf(norm(v));
           if (ri >= 0) {
             q.correctAnswers[idx] = q.rightItems[ri];
+            exactCount++;
           } else {
             q.correctAnswers[idx] = v;
             if (q.rightItems.length) {
@@ -355,6 +388,13 @@ cur = {
         if (Object.keys(q.correctAnswers).length < q.leftItems.length) {
           warnings.push({ qid: q.origId, msg: label + ": only " + Object.keys(q.correctAnswers).length + " match(es) for " + q.leftItems.length + " definition(s)." });
         }
+        if (q.rightItems.length && q.leftItems.length && !exactCount) {
+          warnings.push({
+            qid: q.origId,
+            severity: "error",
+            msg: label + ": none of the answer key values matched a parsed option exactly — every row will grade incorrect."
+          });
+        }
         return;
       }
 
@@ -363,6 +403,15 @@ cur = {
         warnings.push({ qid: q.origId, msg: label + ": no options were parsed — question skipped." });
         q._drop = true;
         return;
+      }
+
+      const optDups = findDuplicates(q.options);
+      if (optDups.length) {
+        warnings.push({
+          qid: q.origId,
+          severity: "error",
+          msg: label + ": duplicate option text (\"" + optDups.join("\", \"") + "\") — grading can't tell identical options apart."
+        });
       }
 
       const values = splitAnswerValues(q.answerText, false);
@@ -391,14 +440,18 @@ cur = {
         // 2) exact normalized equality
         let idx = normOpts.indexOf(nv);
         if (idx >= 0) { found.add(idx); return; }
-        // 3) containment, either direction
+        // 3) containment, either direction — not exact, so flag it
         if (nv.length >= 3) {
           idx = -1;
           for (let i = 0; i < normOpts.length; i++) {
             const no = normOpts[i];
             if (no.length >= 3 && (no.indexOf(nv) !== -1 || nv.indexOf(no) !== -1)) { idx = i; break; }
           }
-          if (idx >= 0) { found.add(idx); return; }
+          if (idx >= 0) {
+            found.add(idx);
+            warnings.push({ qid: q.origId, msg: label + ": answer \"" + v + "\" matched option \"" + q.options[idx] + "\" only by partial containment — verify the wording matches exactly." });
+            return;
+          }
         }
         unmatched.push(v);
       });
@@ -424,7 +477,10 @@ cur = {
             const s = overlapScore(fw, set);
             if (s >= bestScore) { if (s > bestScore || best === -1) { best = i; bestScore = s; } }
           });
-          if (best >= 0) found.add(best);
+          if (best >= 0) {
+            found.add(best);
+            warnings.push({ qid: q.origId, msg: label + ": answer \"" + frag + "\" matched option \"" + q.options[best] + "\" only approximately (fuzzy match) — verify the wording matches exactly." });
+          }
         });
       });
 
@@ -473,12 +529,16 @@ cur = {
       const r = Parser.parse(rawText);
       const types = { single: 0, multiple: 0, matching: 0 };
       r.questions.forEach(function (q) { types[q.type]++; });
+      const errors = r.warnings.filter(function (w) { return w.severity === "error"; });
+      const soft = r.warnings.filter(function (w) { return w.severity !== "error"; });
       return {
         blocks: r.blocks,
         total: r.questions.length,
         types: types,
-        warnings: r.warnings.slice(0, 24),
-        warningCount: r.warnings.length
+        errors: errors,
+        errorCount: errors.length,
+        warnings: soft.slice(0, 24),
+        warningCount: soft.length
       };
     }
   };

@@ -8,6 +8,7 @@ App.views = App.views || {};
   let format = "md";   // "md" | "json"
   let blockingErrors = 0;   // count of severity:"error" diagnostics for the current content — gates the Save button
   let pendingLook = null;   // { icon, tone, logo } chosen before the bank exists — applied right after it's created
+  let multiQueue = null;    // [{ fileName, bankName, format, text }] — dropping several files queues one bank per file
 
   const MD_PLACEHOLDER =
     "### 1. Your first question&#10;- [ ] Option A&#10;- [ ] Option B&#10;...&#10;" +
@@ -141,6 +142,7 @@ App.views = App.views || {};
   View.render = function (root) {
     const names = App.store.bankNames();
     pendingLook = null;   // fresh visit — start from the default look each time
+    multiQueue = null;
 
     root.innerHTML =
       '<div class="view" style="max-width:860px;margin:0 auto">' +
@@ -153,11 +155,14 @@ App.views = App.views || {};
       '<div class="dropzone" id="import-drop">' +
       '<div class="dz-ico">' + App.icon("upload", 21) + "</div>" +
       '<div><div class="dz-t">Drag &amp; drop your file(s) here</div>' +
-      '<div class="dz-s">.md / .txt markdown banks · .json exports · multiple files at once · or click to browse<br>' +
-      '<span style="opacity:.75">Files load into the editor below so you can check them before saving.</span></div></div>' +
+      '<div class="dz-s">.md / .txt markdown banks · .json exports · drop several at once for separate banks · or click to browse<br>' +
+      '<span style="opacity:.75">A single file loads into the editor below so you can check it before saving.</span></div></div>' +
       '<input type="file" id="import-file" accept=".md,.txt,.json" multiple style="display:none">' +
       "</div>" +
 
+      '<div id="import-multi" style="display:none"></div>' +
+
+      '<div id="import-single">' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" class="import-grid">' +
       "<div><label class='field-lbl'>Import method</label><select class='select' id='import-mode'>" +
       '<option value="new">Create a new bank</option><option value="append">Append to an existing bank</option></select></div>' +
@@ -182,6 +187,8 @@ App.views = App.views || {};
       "<div class='field-hint' id='import-fmt-hint'>Question headings look like <code>### 1. Your question</code>, options like <code>- [ ] Choice</code>, and an answer key table at the end.</div></div>" +
 
       '<div id="import-diag" style="display:none"></div>' +
+
+      "</div>" +   /* /#import-single */
 
       '<div style="display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--line);padding-top:16px">' +
       '<button class="btn btn-ghost" id="import-cancel">Cancel</button>' +
@@ -314,45 +321,234 @@ App.views = App.views || {};
     });
   }
 
-  /* Multiple markdown files concatenate into one document — each keeps its
-     own "### N." numbering and its own trailing answer key, and the parser
-     already splits into independent blocks whenever a new heading appears
-     after a key was seen, so this "just works" with no parser changes.
-     Multiple JSON exports merge their `questions` arrays into one bank. */
+  /* Dropping several files queues each as its OWN new bank — see
+     renderMultiQueue/doImportMulti below. A single file still goes through
+     the normal paste-and-review editor. */
   function readFiles(fileList, root) {
     const files = Array.prototype.slice.call(fileList);
     if (!files.length) return;
     if (files.length === 1) { readFile(files[0], root); return; }
 
-    const allJson = files.every(function (f) { return /\.json$/i.test(f.name); });
-
     Promise.all(files.map(readTextFile)).then(function (texts) {
-      const firstTitle = files[0].name.replace(/\.[^.]+$/, "");
-
-      if (allJson) {
-        let merged = [];
-        let name = "";
-        texts.forEach(function (t, i) {
-          let data;
-          try { data = JSON.parse(t); } catch (e) { throw new Error("\"" + files[i].name + "\" isn't valid JSON — " + e.message); }
-          const list = Array.isArray(data) ? data : (data && data.questions);
-          if (!Array.isArray(list)) throw new Error("\"" + files[i].name + "\" has no questions array.");
-          merged = merged.concat(list);
-          if (!name && !Array.isArray(data) && data.name) name = String(data.name);
-        });
-        setFormat(root, "json");
-        root.querySelector("#import-title").value = name || firstTitle;
-        root.querySelector("#import-content").value = JSON.stringify({ name: name || firstTitle, questions: merged }, null, 2);
-      } else {
-        setFormat(root, "md");
-        root.querySelector("#import-title").value = firstTitle;
-        root.querySelector("#import-content").value = texts.join("\n\n");
-      }
-      updateDiag(root);
-      App.ui.toast(files.length + " files loaded and merged — review the diagnostics below.", "info");
+      multiQueue = files.map(function (f, i) {
+        const isJson = /\.json$/i.test(f.name);
+        let bankName = f.name.replace(/\.[^.]+$/, "");
+        if (isJson) {
+          try {
+            const data = JSON.parse(texts[i]);
+            if (data && !Array.isArray(data) && data.name) bankName = String(data.name);
+          } catch (e) { /* this file's own diagnostics will surface the parse error */ }
+        }
+        return { fileName: f.name, bankName: bankName, format: isJson ? "json" : "md", text: texts[i] };
+      });
+      renderMultiQueue(root);
+      App.ui.toast(files.length + " files loaded — review each before importing.", "info");
     }).catch(function (e) {
       App.ui.toast(e.message, "err");
     });
+  }
+
+  /* { total, errorCount, warningCount, errors, warnings, ok, message } for
+     one queued file, using the exact same parse path a single import would
+     use — errors/warnings are the raw {msg} lists so a row can be expanded
+     to show exactly what's wrong, not just a count. */
+  function summarizeFile(entry) {
+    if (entry.format === "json") {
+      try {
+        const res = parseJsonBank(entry.text);
+        const errs = res.warnings.filter(function (w) { return w.severity === "error"; });
+        const warns = res.warnings.filter(function (w) { return w.severity !== "error"; });
+        return { total: res.questions.length, errorCount: errs.length, warningCount: warns.length, errors: errs, warnings: warns, ok: true };
+      } catch (e) {
+        return { total: 0, errorCount: 1, warningCount: 0, errors: [{ msg: e.message }], warnings: [], ok: false, message: e.message };
+      }
+    }
+    const p = App.parser.preview(entry.text);
+    if (!p || !p.total) {
+      const msg = "No questions found — headings must look like “### 1. Question”.";
+      return { total: 0, errorCount: 0, warningCount: 0, errors: [], warnings: [], ok: false, message: msg };
+    }
+    return { total: p.total, errorCount: p.errorCount || 0, warningCount: p.warningCount || 0, errors: p.errors || [], warnings: p.warnings || [], ok: true };
+  }
+
+  function statusChipHtml(sum, expandable) {
+    const chev = expandable ? App.icon("chevDown", 12, 2.4) : "";
+    if (!sum.ok) {
+      return '<span class="warn-item" style="color:var(--bad);background:var(--bad-soft);border-color:var(--bad-line);white-space:nowrap">' +
+        App.icon("warn", 12, 2.2) + "<span>" + App.u.esc(sum.message) + "</span></span>";
+    }
+    if (sum.errorCount) {
+      return '<span class="warn-item" style="color:var(--bad);background:var(--bad-soft);border-color:var(--bad-line);white-space:nowrap">' +
+        App.icon("warn", 12, 2.2) + "<span>" + sum.total + " questions · " + sum.errorCount + " error(s)</span>" + chev + "</span>";
+    }
+    if (sum.warningCount) {
+      return '<span class="warn-item" style="white-space:nowrap">' + App.icon("warn", 12, 2.2) +
+        "<span>" + sum.total + " questions · " + sum.warningCount + " warning(s)</span>" + chev + "</span>";
+    }
+    return '<span class="warn-item" style="color:var(--ok);background:var(--ok-soft);border-color:var(--ok-line);white-space:nowrap">' +
+      App.icon("check", 12, 2.4) + "<span>" + sum.total + " questions · clean</span></span>";
+  }
+
+  /* The full message list for one row's expanded detail panel — same visual
+     language as the single-import diagnostics box. */
+  function fileDetailHtml(entry, sum) {
+    const errHtml = sum.errorCount
+      ? sum.errors.map(function (w) {
+          return '<div class="warn-item" style="color:var(--bad);background:var(--bad-soft);border-color:var(--bad-line)">' +
+            App.icon("warn", 13, 2.2) + "<span>" + App.u.esc(w.msg) + "</span></div>";
+        }).join("")
+      : "";
+    const warnHtml = sum.warningCount
+      ? sum.warnings.map(function (w) {
+          return '<div class="warn-item">' + App.icon("warn", 13, 2.2) + "<span>" + App.u.esc(w.msg) + "</span></div>";
+        }).join("")
+      : "";
+    return '<div class="warn-list" style="margin-top:10px">' + errHtml + warnHtml + "</div>" +
+      '<div style="display:flex;justify-content:flex-end;margin-top:8px">' +
+      '<button class="linklike" data-copy-idx="__IDX__" style="display:inline-flex;align-items:center;gap:6px;color:var(--acc);font-size:11.5px;font-weight:700">' +
+      App.icon("robot", 13) + "Copy issues for AI</button></div>";
+  }
+
+  /* Renders the multi-file queue in place of the normal single-file editor,
+     one row per file (editable bank name, live diagnostics chip, remove,
+     and — when there's something to see — an expandable detail panel with
+     the exact warning/error messages), and repoints the shared
+     Cancel/Save buttons at the batch actions. */
+  function renderMultiQueue(root) {
+    const box = root.querySelector("#import-multi");
+    const single = root.querySelector("#import-single");
+    if (!box || !single) return;
+
+    if (!multiQueue || !multiQueue.length) {
+      multiQueue = null;
+      box.style.display = "none";
+      box.innerHTML = "";
+      single.style.display = "";
+      restoreGoButton(root);
+      return;
+    }
+
+    single.style.display = "none";
+    box.style.display = "";
+
+    const summaries = multiQueue.map(summarizeFile);
+
+    box.innerHTML =
+      '<div class="field-lbl">' + multiQueue.length + " file(s) queued — each becomes its own new bank</div>" +
+      '<div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">' +
+      multiQueue.map(function (entry, i) {
+        const sum = summaries[i];
+        const hasIssues = !sum.ok || sum.errorCount > 0 || sum.warningCount > 0;
+        return '<div class="card" style="padding:12px 14px">' +
+          '<div style="display:flex;align-items:center;gap:12px">' +
+          '<div style="flex:1;min-width:0">' +
+          '<input class="input" data-name-idx="' + i + '" value="' + App.u.esc(entry.bankName) + '" maxlength="70" style="margin-bottom:6px">' +
+          '<div style="font-size:11px;color:var(--muted);font-weight:600">' + App.u.esc(entry.fileName) + " · " + (entry.format === "json" ? "JSON" : "Markdown") + "</div>" +
+          "</div>" +
+          (hasIssues && sum.ok
+            ? '<button class="linklike" data-toggle-idx="' + i + '" style="padding:0;border:0;background:none">' + statusChipHtml(sum, true) + "</button>"
+            : statusChipHtml(sum, false)) +
+          '<button class="icon-btn" data-remove-idx="' + i + '" aria-label="Remove ' + App.u.esc(entry.fileName) + '">' + App.icon("x", 14) + "</button>" +
+          "</div>" +
+          (entry.expanded && sum.ok && hasIssues ? fileDetailHtml(entry, sum).replace("__IDX__", i) : "") +
+          "</div>";
+      }).join("") +
+      "</div>";
+
+    box.querySelectorAll("[data-name-idx]").forEach(function (inp) {
+      inp.oninput = function () { multiQueue[parseInt(inp.dataset.nameIdx, 10)].bankName = inp.value; };
+    });
+    box.querySelectorAll("[data-remove-idx]").forEach(function (btn) {
+      btn.onclick = function () {
+        multiQueue.splice(parseInt(btn.dataset.removeIdx, 10), 1);
+        renderMultiQueue(root);
+      };
+    });
+    box.querySelectorAll("[data-toggle-idx]").forEach(function (btn) {
+      btn.onclick = function () {
+        const idx = parseInt(btn.dataset.toggleIdx, 10);
+        multiQueue[idx].expanded = !multiQueue[idx].expanded;
+        renderMultiQueue(root);
+      };
+    });
+    box.querySelectorAll("[data-copy-idx]").forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.stopPropagation();
+        const idx = parseInt(btn.dataset.copyIdx, 10);
+        const sum = summaries[idx];
+        App.ui.copyText(diagnosticsReportText(sum), "Diagnostics copied — paste them to the AI that generated this exam to get a corrected file.");
+      };
+    });
+
+    setGoButtonForMulti(root, summaries);
+  }
+
+  function setGoButtonForMulti(root, summaries) {
+    const go = root.querySelector("#import-go");
+    const cancel = root.querySelector("#import-cancel");
+    if (!go) return;
+    const importable = summaries.filter(function (s) { return s.ok && !s.errorCount; }).length;
+    go.innerHTML = App.icon("check", 15) + "Import " + multiQueue.length + " bank" + (multiQueue.length === 1 ? "" : "s");
+    go.disabled = false;
+    go.title = importable < multiQueue.length ? (multiQueue.length - importable) + " file(s) with errors will be skipped." : "";
+    go.onclick = function () { doImportMulti(root); };
+    if (cancel) cancel.onclick = function () { multiQueue = null; renderMultiQueue(root); };
+  }
+
+  function restoreGoButton(root) {
+    const go = root.querySelector("#import-go");
+    const cancel = root.querySelector("#import-cancel");
+    if (!go) return;
+    go.innerHTML = App.icon("check", 15) + "Parse &amp; save bank";
+    go.title = "";
+    go.onclick = function () { doImport(root); };
+    if (cancel) cancel.onclick = function () { App.router.go("#/dashboard"); };
+  }
+
+  /* Creates one new bank per queued file, same as the single-file path
+     would, but skips (and reports) any file with a blocking error instead
+     of stalling the whole batch on it. */
+  function doImportMulti(root) {
+    if (!multiQueue || !multiQueue.length) return;
+    let created = 0;
+    const problems = [];
+
+    multiQueue.forEach(function (entry) {
+      const name = (entry.bankName || "").trim() || entry.fileName.replace(/\.[^.]+$/, "");
+      try {
+        let questions;
+        if (entry.format === "json") {
+          const res = parseJsonBank(entry.text);
+          const errs = res.warnings.filter(function (w) { return w.severity === "error"; });
+          if (errs.length) { problems.push(name + ": " + errs.length + " error(s) — skipped."); return; }
+          questions = res.questions;
+        } else {
+          const res = App.parser.parse(entry.text);
+          if (!res.questions.length) { problems.push(name + ": no questions found — skipped."); return; }
+          const errs = res.warnings.filter(function (w) { return w.severity === "error"; });
+          if (errs.length) { problems.push(name + ": " + errs.length + " error(s) — skipped."); return; }
+          questions = res.questions;
+        }
+        App.store.addBank(name, questions);
+        created++;
+      } catch (e) {
+        problems.push(name + ": " + e.message + " — skipped.");
+      }
+    });
+
+    if (created) {
+      App.ui.toast(created + " bank" + (created === 1 ? "" : "s") + " created" + (problems.length ? " (" + problems.length + " skipped)" : "") + ".", problems.length ? "info" : "ok");
+    } else {
+      App.ui.toast("Nothing imported — every file had blocking errors.", "err");
+    }
+    problems.forEach(function (msg) { App.ui.toast(msg, "err"); });
+
+    if (created) {
+      multiQueue = null;
+      App.router.go("#/dashboard");
+    } else {
+      renderMultiQueue(root);   // stay put so the user can remove/fix the problem files
+    }
   }
 
   /* Keeps the "Parse & save bank" button in sync with the last computed

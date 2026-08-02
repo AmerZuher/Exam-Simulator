@@ -150,10 +150,12 @@ window.App = window.App || {};
     const tagline = B.tagline();
 
     const badge = document.getElementById("brand-ico");
-    if (badge) {
-      badge.innerHTML = B.markHtml(20);
-      badge.classList.toggle("has-img", !!B.logoData());
-    }
+    const badgeBox = document.getElementById("brand-btn");
+    if (badge) badge.innerHTML = B.markHtml(20);
+    /* the badge's actual box (background, circular clip) lives on the
+       button wrapping #brand-ico, not on #brand-ico itself — the toggle
+       has to land there or none of the has-img styling ever applies. */
+    if (badgeBox) badgeBox.classList.toggle("has-img", !!B.logoData());
     const nameEl = document.querySelector(".brand-name");
     if (nameEl) nameEl.textContent = name;
     const subEl = document.querySelector(".brand-sub");

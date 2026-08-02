@@ -120,9 +120,13 @@ window.App = window.App || {};
   UI.badgeHtml = function (look, size, cls, attrs) {
     size = size || 20;
     look = look || {};
+    /* the box itself is always sized by the .bank-badge/.lg/.sm/.xs CSS
+       classes, exactly like the icon badge below — `size` only ever sizes
+       an icon *glyph*, never the box, so a logo badge lines up pixel-for-
+       pixel with a normal icon badge in the same spot instead of shrinking
+       to a stray inset thumbnail. */
     if (look.logo) {
-      return '<span class="bank-badge has-img' + (cls ? " " + cls : "") + '"' + (attrs ? " " + attrs : "") +
-        ' style="width:' + size + "px;height:" + size + 'px">' +
+      return '<span class="bank-badge has-img' + (cls ? " " + cls : "") + '"' + (attrs ? " " + attrs : "") + ">" +
         '<img class="bank-badge-img" src="' + U().esc(look.logo) + '" alt="" draggable="false"></span>';
     }
     return '<span class="bank-badge tone-' + (look.tone || "acc") + (cls ? " " + cls : "") + '"' +

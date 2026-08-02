@@ -36,10 +36,23 @@ window.App = window.App || {};
     trigger.appendChild(label);
     trigger.appendChild(chev);
 
+    /* The panel is a portal — a direct child of <body>, not of `wrap` — so
+       its z-index is never trapped inside an ancestor's stacking context.
+       Any card animated with the app's .rise entrance class ends up with a
+       resolved `transform` (even though the keyframe settles on `none`,
+       fill-mode "both" keeps the animation's computed value active), and
+       ANY non-none transform forms a brand new stacking context — which
+       would cap this panel's z-index at the *card's* level, letting a
+       later sibling card paint over it. Living in <body> sidesteps that
+       entirely and lines up with position:fixed using the trigger's own
+       getBoundingClientRect(), which is viewport-relative regardless of
+       which ancestors are scrolled or transformed. */
     const panel = document.createElement("div");
     panel.className = "xsel-panel";
     panel.setAttribute("role", "listbox");
     panel.tabIndex = -1;
+    panel._xselOwner = sel;
+    document.body.appendChild(panel);
 
     function paintTrigger() {
       const opt = sel.options[sel.selectedIndex];
@@ -54,11 +67,8 @@ window.App = window.App || {};
       trigger.setAttribute("aria-expanded", "false");
       document.removeEventListener("mousedown", onDocDown, true);
       document.removeEventListener("keydown", onDocKey, true);
-    }
-
-    function focusRow(i) {
-      const rows = panel.children;
-      if (rows[i]) rows[i].focus();
+      window.removeEventListener("scroll", closePanel, true);
+      window.removeEventListener("resize", closePanel);
     }
 
     function focusStep(fromIndex, dir) {
@@ -79,9 +89,22 @@ window.App = window.App || {};
       sel.dispatchEvent(new Event("change", { bubbles: true }));
     }
 
+    /* The trigger already shows the placeholder text when nothing's picked
+       yet, so repeating an empty-value option as a selectable row in the
+       open list is pure clutter — skip it there. */
+    function listedOptions() {
+      const out = [];
+      Array.prototype.forEach.call(sel.options, function (opt, i) {
+        if (opt.value === "" && sel.options.length > 1) return;
+        out.push({ opt: opt, index: i });
+      });
+      return out;
+    }
+
     function buildOptions() {
       panel.innerHTML = "";
-      Array.prototype.forEach.call(sel.options, function (opt, i) {
+      listedOptions().forEach(function (entry, ri) {
+        const opt = entry.opt, i = entry.index;
         const row = document.createElement("div");
         row.className = "xsel-opt" + (i === sel.selectedIndex ? " on" : "") + (opt.disabled ? " is-disabled" : "");
         row.setAttribute("role", "option");
@@ -92,8 +115,8 @@ window.App = window.App || {};
           row.onclick = function () { choose(i); };
           row.onkeydown = function (e) {
             if (e.key === "Enter" || e.key === " ") { e.preventDefault(); choose(i); }
-            else if (e.key === "ArrowDown") { e.preventDefault(); focusStep(i, 1); }
-            else if (e.key === "ArrowUp") { e.preventDefault(); focusStep(i, -1); }
+            else if (e.key === "ArrowDown") { e.preventDefault(); focusStep(ri, 1); }
+            else if (e.key === "ArrowUp") { e.preventDefault(); focusStep(ri, -1); }
             else if (e.key === "Escape") { e.preventDefault(); closePanel(); trigger.focus(); }
             else if (e.key === "Tab") closePanel();
           };
@@ -102,28 +125,50 @@ window.App = window.App || {};
       });
     }
 
+    /* Fixed positioning (viewport-relative, like getBoundingClientRect
+       itself) so the panel lines up with the trigger no matter what
+       ancestors are scrolled or transformed — see the portal note above. */
     function positionPanel() {
       const rect = trigger.getBoundingClientRect();
       const roomBelow = window.innerHeight - rect.bottom;
-      panel.classList.toggle("flip", roomBelow < 220 && rect.top > roomBelow);
+      const flip = roomBelow < 220 && rect.top > roomBelow;
+      panel.classList.toggle("flip", flip);
+      panel.style.left = rect.left + "px";
+      panel.style.width = rect.width + "px";
+      if (flip) {
+        panel.style.top = "";
+        panel.style.bottom = (window.innerHeight - rect.top + 6) + "px";
+      } else {
+        panel.style.top = (rect.bottom + 6) + "px";
+        panel.style.bottom = "";
+      }
     }
 
     function openPanel() {
       document.querySelectorAll(".xsel-panel.open").forEach(function (p) { if (p !== panel) p.classList.remove("open"); });
       buildOptions();
-      positionPanel();
       panel.classList.add("open");
+      positionPanel();
       trigger.setAttribute("aria-expanded", "true");
       document.addEventListener("mousedown", onDocDown, true);
       document.addEventListener("keydown", onDocKey, true);
+      /* the panel no longer lives inside the page's scroll container, so
+         rather than track scroll position live, just close on any scroll
+         or resize — simple and avoids ever showing it in a stale spot */
+      window.addEventListener("scroll", closePanel, true);
+      window.addEventListener("resize", closePanel);
       const cur = panel.querySelector(".xsel-opt.on:not(.is-disabled)") || panel.querySelector(".xsel-opt:not(.is-disabled)");
       if (cur) cur.focus(); else panel.focus();
     }
 
-    function onDocDown(e) { if (!wrap.contains(e.target)) closePanel(); }
+    function onDocDown(e) { if (!wrap.contains(e.target) && !panel.contains(e.target)) closePanel(); }
     function onDocKey(e) {
       if (e.key === "Escape") { closePanel(); trigger.focus(); }
-      else if (e.key === "ArrowDown" && document.activeElement === trigger) { e.preventDefault(); focusRow(sel.selectedIndex >= 0 ? sel.selectedIndex : 0); }
+      else if (e.key === "ArrowDown" && document.activeElement === trigger) {
+        e.preventDefault();
+        const cur = panel.querySelector(".xsel-opt.on:not(.is-disabled)") || panel.querySelector(".xsel-opt:not(.is-disabled)");
+        if (cur) cur.focus();
+      }
     }
 
     trigger.onclick = function () {
@@ -136,17 +181,28 @@ window.App = window.App || {};
 
     sel.parentNode.insertBefore(wrap, sel);
     wrap.appendChild(trigger);
-    wrap.appendChild(panel);
-    wrap.appendChild(sel);
+    wrap.appendChild(sel);   // panel is already in <body> — see above
     sel.tabIndex = -1;
     sel.setAttribute("aria-hidden", "true");
 
     paintTrigger();
   };
 
+  /* Each enhanced select's panel is portaled onto <body> (see above), so it
+     outlives its own <select> once a view re-render replaces that select's
+     subtree wholesale (root.innerHTML = ...). Sweep those orphans out
+     before enhancing the new batch — cheap, and every view already calls
+     enhanceSelects right after rendering, so this needs no extra hook. */
+  function sweepOrphanPanels() {
+    document.querySelectorAll(".xsel-panel").forEach(function (p) {
+      if (!p._xselOwner || !document.contains(p._xselOwner)) p.remove();
+    });
+  }
+
   /* Enhance every plain <select class="select"> under root (defaults to the
      whole document) — call once after any view/modal renders its markup. */
   Components.enhanceSelects = function (root) {
+    sweepOrphanPanels();
     (root || document).querySelectorAll("select.select").forEach(Components.enhanceSelect);
   };
 

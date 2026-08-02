@@ -160,7 +160,7 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
 .shell.sb-collapsed #side-nav { overflow: hidden; display: flex; flex-direction: column; gap: 4px; }
 .shell.sb-collapsed .brand { width: 100%; margin: 0 0 8px; padding: 0; justify-content: center; }
 .shell.sb-collapsed .brand > div:last-child { display: none; }
-.shell.sb-collapsed .brand-badge { width: 36px; height: 36px; border-radius: 11px; box-shadow: 0 4px 10px -4px var(--acc); }
+.shell.sb-collapsed .brand-badge { width: 36px; height: 36px; border-radius: 50%; box-shadow: 0 4px 10px -4px var(--acc); }
 
 .shell.sb-collapsed .nav-label { display: none; }
 .shell.sb-collapsed .nav-item {
@@ -234,7 +234,7 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
 .brand-badge {
   width: 38px; height: 38px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 50%;
   background: var(--acc-grad);
   color: #fff;
   display: grid;
@@ -735,13 +735,16 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
 .xsel-chev { flex-shrink: 0; display: flex; color: var(--muted); transition: transform 0.18s ease; }
 .xsel-trigger[aria-expanded="true"] .xsel-chev { transform: rotate(180deg); color: var(--acc); }
 
+/* Portaled onto <body> and positioned via inline top/left/width/bottom set
+   in components.js (viewport-relative, matching getBoundingClientRect) —
+   position:fixed here is what lets it escape a transformed ancestor's
+   stacking context (see the comment in components.js for why that matters:
+   .rise-animated cards resolve to a non-none transform even at rest,
+   which otherwise traps a lower z-index panel behind later sibling cards). */
 .xsel-panel {
   display: none;
-  position: absolute;
+  position: fixed;
   z-index: 70;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
   max-height: 264px;
   overflow-y: auto;
   background: var(--surface);
@@ -751,7 +754,6 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
   padding: 5px;
 }
 .xsel-panel.open { display: block; animation: popIn 0.16s var(--ease); }
-.xsel-panel.flip { top: auto; bottom: calc(100% + 6px); }
 .xsel-opt {
   padding: 9px 11px;
   border-radius: 8px;
@@ -2306,10 +2308,21 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
 .nav-ico .bank-badge.tone-warn { color: var(--warn); }
 .nav-ico .bank-badge.tone-bad { color: var(--bad); }
 
-/* a custom-uploaded logo replaces the icon+tone entirely */
-.bank-badge.has-img { background: var(--surface-3); border-color: var(--line); overflow: hidden; padding: 0; }
+/* A custom-uploaded logo replaces the icon+tone fill but keeps the exact
+   same box: same size class, same squircle radius, same border — so it
+   reads as just another bank badge, not a different kind of element.
+   No overflow:hidden here — the image clips to its own rounded corners via
+   border-radius directly (images support that natively), which matters
+   because overflow:hidden would ALSO slice off the "change icon" +
+   indicator below, which deliberately hangs a few pixels past this same
+   box's edge. */
+.bank-badge.has-img { background: var(--surface-3); border-color: var(--line); padding: 0; }
 .bank-badge-img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; border-radius: inherit; }
-.nav-ico .bank-badge.has-img { border-radius: 7px; overflow: hidden; }
+
+/* The sidebar rail resets icon badges to borderless auto-sized glyphs (no
+   box at all) — a photo can't do that, it needs real pixels to size
+   against, so give it the same footprint the rail's icons occupy. */
+.nav-ico .bank-badge.has-img { width: 18px; height: 18px; border-radius: 6px; overflow: hidden; background: var(--surface-3); border: 1px solid var(--line); }
 
 /* clickable badges (study header, dashboard card) */
 .bank-badge.editable { cursor: pointer; position: relative; transition: transform 0.18s var(--ease), filter 0.18s ease; }
@@ -2414,7 +2427,7 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
 .bp-badge {
   display: grid; place-items: center;
   width: 52px; height: 52px;
-  border-radius: 16px;
+  border-radius: 50%;
   background: var(--acc-grad);
   color: #fff;
   flex-shrink: 0;

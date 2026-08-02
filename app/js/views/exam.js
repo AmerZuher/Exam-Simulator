@@ -11,6 +11,7 @@ App.views = App.views || {};
   let expired = false;      // time limit hit — auto-submit in flight
   let keyHandler = null;
   let qStart = 0;           // when the current question came on screen
+  let leavingExplicitly = false;   // "Save & exit" already told the user their progress is stored — skip the extra toast
 
   /* ---- per-question stopwatch ---- */
   function markQuestionStart() { qStart = Date.now(); }
@@ -127,6 +128,7 @@ App.views = App.views || {};
     }
     poolSel.onchange = refreshHint;
     refreshHint();
+    App.components.enhanceSelects(veil);
 
     veil.querySelectorAll("[data-x]").forEach(function (b) { b.onclick = App.ui.closeModal; });
     veil.querySelector("#setup-go").onclick = function () {
@@ -331,7 +333,15 @@ App.views = App.views || {};
     unbindKeys();
     hidePauseOverlay();
     App.views.exam.updateTopbar(true);
-    if (session) { saveSession(); }
+    if (session) {
+      saveSession();
+      /* an in-progress exam left via any route OTHER than the explicit
+         "Save & exit" button (sidebar nav, browser back, closing the tab
+         mid-session) gets no feedback otherwise — a quiet reassurance beats
+         the user wondering if their answers survived. */
+      if (!leavingExplicitly) App.ui.toast("Progress saved — resume anytime from the dashboard.", "info");
+    }
+    leavingExplicitly = false;
   };
 
   /* ---------------- timer ---------------- */
@@ -514,6 +524,7 @@ App.views = App.views || {};
         throttledSave();
       };
     });
+    App.components.enhanceSelects(main);
     const flagBtn = document.getElementById("flag-btn");
     if (flagBtn) flagBtn.onclick = View.toggleFlag;
     const prev = document.getElementById("prev-btn");
@@ -598,6 +609,7 @@ App.views = App.views || {};
         desc: "Your progress is stored and you can resume this exam anytime from the dashboard.",
         confirmLabel: "Save & exit"
       }, function () {
+        leavingExplicitly = true;
         saveSession();
         App.router.go("#/dashboard");
       });
@@ -817,6 +829,7 @@ App.views = App.views || {};
     veil.querySelectorAll(".build-bank-row").forEach(function (row) {
       row.onclick = function () { row.classList.toggle("sel"); };
     });
+    App.components.enhanceSelects(veil);
 
     veil.querySelector("#build-go").onclick = function () {
       const selected = veil.querySelectorAll(".build-bank-row.sel");

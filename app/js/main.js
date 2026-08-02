@@ -113,8 +113,22 @@ window.App = window.App || {};
     const store = App.store;
     const names = store.bankNames();
     const stats = store.globalStats();
+    const session = store.state.session;
 
-    let html =
+    let html = "";
+
+    /* An exam left mid-session (accidental nav click, browser back, closed
+       tab) is saved automatically, but the only way back to it used to be
+       the Dashboard's resume banner — easy to lose track of from any other
+       page. Surface it here too, wherever the user ends up. */
+    if (session && activeName !== "exam" && (session.origin || store.getBank(session.bankKey))) {
+      html += '<button class="nav-item nav-resume" id="nav-resume-exam">' +
+        '<span class="nav-ico">' + App.icon("resume", 17) + '</span>' +
+        '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Resume exam</span>' +
+        '<span class="nav-pill pill-resume">' + (session.index + 1) + "/" + session.questions.length + "</span></button>";
+    }
+
+    html +=
       '<button class="nav-item' + (activeName === "dashboard" ? " active" : "") + '" data-nav="#/dashboard">' +
       '<span class="nav-ico">' + App.icon("dashboard", 17) + '</span><span>Dashboard</span>' +
       '<span class="nav-pill">' + stats.banks + "</span></button>" +
@@ -149,6 +163,8 @@ window.App = window.App || {};
     nav.querySelectorAll("[data-nav]").forEach(function (b) {
       b.onclick = function () { App.router.go(b.dataset.nav); };
     });
+    const resumeBtn = document.getElementById("nav-resume-exam");
+    if (resumeBtn) resumeBtn.onclick = function () { App.views.exam.resumeSession(); };
 
     /* add tooltips for collapsed mode */
     nav.querySelectorAll(".nav-item").forEach(function (b) {

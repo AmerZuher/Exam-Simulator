@@ -94,7 +94,7 @@ settings: { theme: "light", accent: "indigo", sidebarCollapsed: false, dailyGoal
     bankNames: function () { return Object.keys(this.state.banks); },
     getBank: function (name) { return this.state.banks[name] || null; },
 
-    /* ---- per-bank appearance (icon + colour tone) ---- */
+    /* ---- per-bank appearance (icon + colour tone, or a custom logo image) ---- */
     bankIcon: function (name) {
       const b = this.state.banks[name];
       return (b && b.icon) || "grad";
@@ -103,10 +103,18 @@ settings: { theme: "light", accent: "indigo", sidebarCollapsed: false, dailyGoal
       const b = this.state.banks[name];
       return (b && b.tone) || "acc";
     },
-    setBankLook: function (name, icon, tone) {
+    bankLogo: function (name) {
+      const b = this.state.banks[name];
+      return (b && b.logo) || null;
+    },
+    /* A logo image and a glyph icon are mutually exclusive (like the app's
+       own branding) — passing `logo` clears the icon choice and vice versa,
+       so bankBadge always has one unambiguous thing to render. */
+    setBankLook: function (name, icon, tone, logo) {
       const b = this.state.banks[name];
       if (!b) return false;
-      if (icon) b.icon = icon;
+      if (logo) { b.logo = logo; delete b.icon; }
+      else if (icon) { b.icon = icon; delete b.logo; }
       if (tone) b.tone = tone;
       this.saveBanks();
       return true;

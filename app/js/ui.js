@@ -28,6 +28,24 @@ window.App = window.App || {};
     }, 3400);
   };
 
+  /* Clipboard copy with the same execCommand fallback everywhere a "Copy
+     ___" button needs it (older/insecure-context browsers lack
+     navigator.clipboard). */
+  UI.copyText = function (text, okMsg) {
+    function fallback() {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); UI.toast(okMsg, "ok"); }
+      catch (e) { UI.toast("Copy failed — select and copy manually.", "err"); }
+      ta.remove();
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { UI.toast(okMsg, "ok"); }, fallback);
+    } else fallback();
+  };
+
   /* ---------------- modals ---------------- */
   function openModal(html) {
     closeModal();
@@ -93,14 +111,30 @@ window.App = window.App || {};
 
   UI.customModal = openModal;
 
-  /* ---------------- bank icon / tone picker ---------------- */
-  /* Renders a bank's badge at any size — the single place that decides how a
-     bank looks, so the dashboard, sidebar, study header and palette agree. */
+  /* ---------------- bank icon / tone / logo picker ---------------- */
+  /* Renders a badge from a plain {icon, tone, logo} look — the one place
+     that decides how a badge is drawn, whether it's backed by a stored bank
+     or a look the caller is still deciding on (e.g. the Import screen,
+     before the bank exists). UI.bankBadge is a thin wrapper for the common
+     "look up an existing bank's saved look" case. */
+  UI.badgeHtml = function (look, size, cls, attrs) {
+    size = size || 20;
+    look = look || {};
+    if (look.logo) {
+      return '<span class="bank-badge has-img' + (cls ? " " + cls : "") + '"' + (attrs ? " " + attrs : "") +
+        ' style="width:' + size + "px;height:" + size + 'px">' +
+        '<img class="bank-badge-img" src="' + U().esc(look.logo) + '" alt="" draggable="false"></span>';
+    }
+    return '<span class="bank-badge tone-' + (look.tone || "acc") + (cls ? " " + cls : "") + '"' +
+      (attrs ? " " + attrs : "") + ">" + App.icon(look.icon || "grad", size) + "</span>";
+  };
+
   UI.bankBadge = function (bankName, size, cls, attrs) {
-    const icon = App.store.bankIcon(bankName);
-    const tone = App.store.bankTone(bankName);
-    return '<span class="bank-badge tone-' + tone + (cls ? " " + cls : "") + '"' +
-      (attrs ? " " + attrs : "") + ">" + App.icon(icon, size || 20) + "</span>";
+    return UI.badgeHtml({
+      icon: App.store.bankIcon(bankName),
+      tone: App.store.bankTone(bankName),
+      logo: App.store.bankLogo(bankName)
+    }, size, cls, attrs);
   };
 
   /* A badge that opens the picker when clicked — wire the container with
@@ -124,21 +158,28 @@ window.App = window.App || {};
     });
   };
 
-  UI.pickBankLook = function (bankName, onSaved) {
+  /* Generic look-picker modal: icon+tone grid, or an uploaded image. Used
+     both to re-style an existing bank (pickBankLook) and — via the same
+     function — to choose a look for a bank that doesn't exist yet (the
+     Import screen), where there's no bank name to read/write, only a plain
+     {icon, tone, logo} object the caller owns. */
+  UI.pickLook = function (opts) {
     const u = U();
-    let icon = App.store.bankIcon(bankName);
-    let tone = App.store.bankTone(bankName);
+    let icon = opts.icon || "grad";
+    let tone = opts.tone || "acc";
+    let logo = opts.logo || null;
 
     const veil = openModal(
       '<div class="modal-head"><div>' +
-      '<div class="modal-title">Bank icon</div>' +
-      '<div class="modal-sub">' + u.esc(bankName) + "</div></div>" +
+      '<div class="modal-title">' + u.esc(opts.title || "Icon") + "</div>" +
+      (opts.subtitle ? '<div class="modal-sub">' + u.esc(opts.subtitle) + "</div>" : "") + "</div>" +
       '<button class="icon-btn" data-x>' + App.icon("x", 15) + "</button></div>" +
 
-      '<div class="picker-preview"><span class="bank-badge lg tone-' + tone + '" id="pick-preview">' +
-      App.icon(icon, 30) + "</span>" +
-      '<div><div class="pp-name">' + u.esc(bankName) + "</div>" +
-      '<div class="pp-sub">This is how the bank appears everywhere.</div></div></div>' +
+      '<div class="picker-preview">' +
+      '<span class="bank-badge lg' + (logo ? " has-img" : " tone-" + tone) + '" id="pick-preview">' +
+      (logo ? '<img class="bank-badge-img" src="' + u.esc(logo) + '" alt="">' : App.icon(icon, 30)) + "</span>" +
+      '<div><div class="pp-name">' + u.esc(opts.subtitle || "Preview") + "</div>" +
+      '<div class="pp-sub">This is how it appears everywhere.</div></div></div>' +
 
       "<label class='field-lbl'>Colour</label>" +
       '<div class="tone-row" id="pick-tones">' +
@@ -150,9 +191,16 @@ window.App = window.App || {};
       "<label class='field-lbl' style='margin-top:14px'>Icon</label>" +
       '<div class="icon-grid" id="pick-icons">' +
       App.bankIcons.map(function (n) {
-        return '<button class="icon-cell' + (n === icon ? " on" : "") + '" data-icon="' + n +
+        return '<button class="icon-cell' + (n === icon && !logo ? " on" : "") + '" data-icon="' + n +
           '" title="' + n + '">' + App.icon(n, 19) + "</button>";
       }).join("") + "</div>" +
+
+      "<label class='field-lbl' style='margin-top:14px'>Or upload your own</label>" +
+      '<div class="pick-upload">' +
+      '<button class="btn btn-ghost btn-sm" id="pick-upload-btn">' + App.icon("upload", 13) + "Upload image</button>" +
+      '<input type="file" id="pick-upload-file" accept="image/*" style="display:none">' +
+      '<button class="btn btn-ghost btn-sm" id="pick-upload-clear" style="display:' + (logo ? "" : "none") + '">' + App.icon("x", 13) + "Remove image</button>" +
+      "</div>" +
 
       '<div class="modal-foot">' +
       '<button class="btn btn-ghost" data-x>Cancel</button>' +
@@ -161,9 +209,12 @@ window.App = window.App || {};
     );
 
     const preview = veil.querySelector("#pick-preview");
+    const clearBtn = veil.querySelector("#pick-upload-clear");
     function repaint() {
-      preview.className = "bank-badge lg tone-" + tone;
-      preview.innerHTML = App.icon(icon, 30);
+      preview.className = "bank-badge lg" + (logo ? " has-img" : " tone-" + tone);
+      preview.innerHTML = logo ? '<img class="bank-badge-img" src="' + u.esc(logo) + '" alt="">' : App.icon(icon, 30);
+      veil.querySelectorAll("[data-icon]").forEach(function (o) { o.classList.toggle("on", !logo && o.dataset.icon === icon); });
+      clearBtn.style.display = logo ? "" : "none";
     }
 
     veil.querySelectorAll("[data-tone]").forEach(function (b) {
@@ -176,18 +227,45 @@ window.App = window.App || {};
     veil.querySelectorAll("[data-icon]").forEach(function (b) {
       b.onclick = function () {
         icon = b.dataset.icon;
-        veil.querySelectorAll("[data-icon]").forEach(function (o) { o.classList.toggle("on", o === b); });
+        logo = null;
         repaint();
       };
     });
 
+    const uploadBtn = veil.querySelector("#pick-upload-btn");
+    const uploadFile = veil.querySelector("#pick-upload-file");
+    uploadBtn.onclick = function () { uploadFile.click(); };
+    uploadFile.onchange = function () {
+      const f = uploadFile.files[0];
+      if (!f) return;
+      App.u.readImageFile(f, {}, function (dataUri) {
+        logo = dataUri;
+        repaint();
+        UI.toast("Image loaded — click Save to apply it.", "ok");
+      }, function (msg) { UI.toast(msg, "err"); });
+    };
+    clearBtn.onclick = function () { logo = null; repaint(); };
+
     veil.querySelectorAll("[data-x]").forEach(function (b) { b.onclick = closeModal; });
     veil.querySelector("#pick-save").onclick = function () {
-      App.store.setBankLook(bankName, icon, tone);
       closeModal();
-      UI.toast("Icon updated.", "ok");
-      if (onSaved) onSaved();
+      if (opts.onSave) opts.onSave({ icon: logo ? null : icon, tone: tone, logo: logo });
     };
+  };
+
+  UI.pickBankLook = function (bankName, onSaved) {
+    UI.pickLook({
+      title: "Bank icon",
+      subtitle: bankName,
+      icon: App.store.bankIcon(bankName),
+      tone: App.store.bankTone(bankName),
+      logo: App.store.bankLogo(bankName),
+      onSave: function (result) {
+        App.store.setBankLook(bankName, result.icon, result.tone, result.logo);
+        UI.toast("Icon updated.", "ok");
+        if (onSaved) onSaved();
+      }
+    });
   };
 
   /* ---------------- svg ring ---------------- */

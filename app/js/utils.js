@@ -122,5 +122,52 @@ window.App = window.App || {};
     });
   };
 
+  /* Reads a user-picked image into a storable data URI — shared by the app
+     branding picker and any per-bank logo picker so both get the same
+     validation and don't blow up localStorage. Small SVGs stay vector;
+     everything else is drawn onto a square canvas (cover-cropped, no
+     letterboxing) so the stored size stays small and predictable. */
+  U.readImageFile = function (file, opts, done, fail) {
+    opts = opts || {};
+    const maxBytes = opts.maxBytes || 4 * 1024 * 1024;
+    const size = opts.size || 256;
+    const svgInlineLimit = opts.svgInlineLimit || 64 * 1024;
+
+    if (!file) return fail("No file selected.");
+    if (!/^image\//.test(file.type)) return fail("That file isn't an image.");
+    if (file.size > maxBytes) return fail("Image is larger than " + Math.round(maxBytes / (1024 * 1024)) + " MB — try a smaller one.");
+
+    const reader = new FileReader();
+    reader.onerror = function () { fail("Could not read that file."); };
+
+    if (file.type === "image/svg+xml" && file.size <= svgInlineLimit) {
+      reader.onload = function () { done("data:image/svg+xml," + encodeURIComponent(String(reader.result))); };
+      reader.readAsText(file);
+      return;
+    }
+
+    reader.onload = function () {
+      const img = new Image();
+      img.onerror = function () { fail("That image could not be decoded."); };
+      img.onload = function () {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = canvas.height = size;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return done(String(reader.result));
+          const scale = Math.max(size / img.width, size / img.height);
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+          done(canvas.toDataURL("image/png"));
+        } catch (e) {
+          fail("Could not process that image.");
+        }
+      };
+      img.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
   App.u = U;
 })();

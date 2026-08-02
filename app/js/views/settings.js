@@ -122,6 +122,7 @@ App.views = App.views || {};
 
     wire(root.firstElementChild);
     refreshPreview();
+    App.components.enhanceSelects(root);
   };
 
   /* ---------------- preview ---------------- */

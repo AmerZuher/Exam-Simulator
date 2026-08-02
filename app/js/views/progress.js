@@ -148,6 +148,7 @@ App.views = App.views || {};
     App.chart.heatmap(document.getElementById("chart-heat"), activity);
 
     wire(root.firstElementChild, attempts);
+    App.components.enhanceSelects(root);
   };
 
   View.destroy = function () { if (App.chart) App.chart.hideTip(); };

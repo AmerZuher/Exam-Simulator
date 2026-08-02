@@ -7,6 +7,7 @@ App.views = App.views || {};
 
   let format = "md";   // "md" | "json"
   let blockingErrors = 0;   // count of severity:"error" diagnostics for the current content — gates the Save button
+  let pendingLook = null;   // { icon, tone, logo } chosen before the bank exists — applied right after it's created
 
   const MD_PLACEHOLDER =
     "### 1. Your first question&#10;- [ ] Option A&#10;- [ ] Option B&#10;...&#10;" +
@@ -139,6 +140,7 @@ App.views = App.views || {};
 
   View.render = function (root) {
     const names = App.store.bankNames();
+    pendingLook = null;   // fresh visit — start from the default look each time
 
     root.innerHTML =
       '<div class="view" style="max-width:860px;margin:0 auto">' +
@@ -150,17 +152,19 @@ App.views = App.views || {};
 
       '<div class="dropzone" id="import-drop">' +
       '<div class="dz-ico">' + App.icon("upload", 21) + "</div>" +
-      '<div><div class="dz-t">Drag &amp; drop your file here</div>' +
-      '<div class="dz-s">.md / .txt markdown banks · .json exports · or click to browse<br>' +
+      '<div><div class="dz-t">Drag &amp; drop your file(s) here</div>' +
+      '<div class="dz-s">.md / .txt markdown banks · .json exports · multiple files at once · or click to browse<br>' +
       '<span style="opacity:.75">Files load into the editor below so you can check them before saving.</span></div></div>' +
-      '<input type="file" id="import-file" accept=".md,.txt,.json" style="display:none">' +
+      '<input type="file" id="import-file" accept=".md,.txt,.json" multiple style="display:none">' +
       "</div>" +
 
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" class="import-grid">' +
       "<div><label class='field-lbl'>Import method</label><select class='select' id='import-mode'>" +
       '<option value="new">Create a new bank</option><option value="append">Append to an existing bank</option></select></div>' +
-      "<div id='import-title-wrap'><label class='field-lbl'>Bank name</label>" +
-      '<input class="input" id="import-title" placeholder="e.g. PMP Practice Set 1" maxlength="70"></div>' +
+      "<div id='import-title-wrap'><label class='field-lbl'>Bank name &amp; icon</label>" +
+      '<div style="display:flex;gap:10px;align-items:center">' +
+      '<span class="bank-badge editable" id="import-look-badge" role="button" tabindex="0" title="Choose icon or upload a logo"></span>' +
+      '<input class="input" id="import-title" placeholder="e.g. PMP Practice Set 1" maxlength="70" style="flex:1"></div></div>' +
       "<div id='import-target-wrap' style='display:none'><label class='field-lbl'>Destination bank</label>" +
       "<select class='select' id='import-target'>" +
       (names.length ? names.map(function (n) { return '<option value="' + App.u.esc(n) + '">' + App.u.esc(n) + "</option>"; }).join("") : '<option value="">No banks yet</option>') +
@@ -187,6 +191,7 @@ App.views = App.views || {};
       "</div></section></div>";
 
     wire(root);
+    App.components.enhanceSelects(root);
     setFormat(root, "md");   // fresh visits start on markdown; content sniffing flips it if needed
   };
 
@@ -205,15 +210,37 @@ App.views = App.views || {};
       drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove("drag"); });
     });
     drop.addEventListener("drop", function (e) {
-      if (e.dataTransfer.files.length) readFile(e.dataTransfer.files[0], root);
+      if (e.dataTransfer.files.length) readFiles(e.dataTransfer.files, root);
     });
-    file.onchange = function () { if (file.files.length) readFile(file.files[0], root); };
+    file.onchange = function () { if (file.files.length) readFiles(file.files, root); };
 
     mode.onchange = function () {
       const isNew = mode.value === "new";
       root.querySelector("#import-title-wrap").style.display = isNew ? "" : "none";
       root.querySelector("#import-target-wrap").style.display = isNew ? "none" : "";
     };
+
+    const lookBadge = root.querySelector("#import-look-badge");
+    function paintLookBadge() {
+      lookBadge.className = "bank-badge editable" +
+        (pendingLook && pendingLook.logo ? " has-img" : " tone-" + (pendingLook && pendingLook.tone || "acc"));
+      lookBadge.innerHTML = pendingLook && pendingLook.logo
+        ? '<img class="bank-badge-img" src="' + App.u.esc(pendingLook.logo) + '" alt="">'
+        : App.icon(pendingLook && pendingLook.icon || "grad", 20);
+    }
+    function openLookPicker() {
+      App.ui.pickLook({
+        title: "Bank icon",
+        subtitle: (root.querySelector("#import-title").value.trim() || "New bank"),
+        icon: pendingLook && pendingLook.icon,
+        tone: pendingLook && pendingLook.tone,
+        logo: pendingLook && pendingLook.logo,
+        onSave: function (result) { pendingLook = result; paintLookBadge(); }
+      });
+    }
+    lookBadge.onclick = openLookPicker;
+    lookBadge.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openLookPicker(); } };
+    paintLookBadge();
 
     content.addEventListener("input", u.debounce(function () { updateDiag(root); }, 220));
 
@@ -276,6 +303,56 @@ App.views = App.views || {};
       App.ui.toast("File loaded — review the diagnostics below.", "info");
     };
     reader.readAsText(f);
+  }
+
+  function readTextFile(f) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function () { resolve(reader.result); };
+      reader.onerror = function () { reject(new Error("Could not read \"" + f.name + "\".")); };
+      reader.readAsText(f);
+    });
+  }
+
+  /* Multiple markdown files concatenate into one document — each keeps its
+     own "### N." numbering and its own trailing answer key, and the parser
+     already splits into independent blocks whenever a new heading appears
+     after a key was seen, so this "just works" with no parser changes.
+     Multiple JSON exports merge their `questions` arrays into one bank. */
+  function readFiles(fileList, root) {
+    const files = Array.prototype.slice.call(fileList);
+    if (!files.length) return;
+    if (files.length === 1) { readFile(files[0], root); return; }
+
+    const allJson = files.every(function (f) { return /\.json$/i.test(f.name); });
+
+    Promise.all(files.map(readTextFile)).then(function (texts) {
+      const firstTitle = files[0].name.replace(/\.[^.]+$/, "");
+
+      if (allJson) {
+        let merged = [];
+        let name = "";
+        texts.forEach(function (t, i) {
+          let data;
+          try { data = JSON.parse(t); } catch (e) { throw new Error("\"" + files[i].name + "\" isn't valid JSON — " + e.message); }
+          const list = Array.isArray(data) ? data : (data && data.questions);
+          if (!Array.isArray(list)) throw new Error("\"" + files[i].name + "\" has no questions array.");
+          merged = merged.concat(list);
+          if (!name && !Array.isArray(data) && data.name) name = String(data.name);
+        });
+        setFormat(root, "json");
+        root.querySelector("#import-title").value = name || firstTitle;
+        root.querySelector("#import-content").value = JSON.stringify({ name: name || firstTitle, questions: merged }, null, 2);
+      } else {
+        setFormat(root, "md");
+        root.querySelector("#import-title").value = firstTitle;
+        root.querySelector("#import-content").value = texts.join("\n\n");
+      }
+      updateDiag(root);
+      App.ui.toast(files.length + " files loaded and merged — review the diagnostics below.", "info");
+    }).catch(function (e) {
+      App.ui.toast(e.message, "err");
+    });
   }
 
   /* Keeps the "Parse & save bank" button in sync with the last computed
@@ -347,6 +424,13 @@ App.views = App.views || {};
       : (p.errorCount ? "" : '<div class="warn-item" style="color:var(--ok);background:var(--ok-soft);border-color:var(--ok-line)">' + App.icon("check", 13, 2.4) +
         "<span>" + (format === "json" ? "Valid bank — every question has options and an answer." : "Clean parse — every answer key matched its options.") + "</span></div>");
 
+    const hasIssues = (p.errorCount || 0) + (p.warningCount || 0) > 0;
+    const copyBtnHtml = hasIssues
+      ? '<div style="display:flex;justify-content:flex-end;margin-bottom:8px">' +
+        '<button class="linklike" id="diag-copy-ai" style="display:inline-flex;align-items:center;gap:6px;color:var(--acc);font-size:11.5px;font-weight:700">' +
+        App.icon("robot", 13) + "Copy issues for AI</button></div>"
+      : "";
+
     box.style.display = "";
     box.innerHTML =
       '<div class="diag">' +
@@ -354,7 +438,13 @@ App.views = App.views || {};
       (format === "json" ? "Source bank" : "Document sections") + "</div></div>" +
       '<div class="diag-tile"><div class="dt-n">' + p.total + '</div><div class="dt-l">Questions parsed</div></div>' +
       '<div class="diag-tile"><div class="dt-n" style="font-size:13px;line-height:2">' + p.types.single + " single · " + p.types.multiple + " multi · " + p.types.matching + ' match</div><div class="dt-l">Type breakdown</div></div>' +
-      "</div>" + errHtml + warnHtml;
+      "</div>" + copyBtnHtml + errHtml + warnHtml;
+
+    if (hasIssues) {
+      box.querySelector("#diag-copy-ai").onclick = function () {
+        App.ui.copyText(diagnosticsReportText(p), "Diagnostics copied — paste them to the AI that generated this exam to get a corrected file.");
+      };
+    }
   }
 
   function doImport(root) {
@@ -392,6 +482,7 @@ App.views = App.views || {};
 
     if (mode === "new") {
       const final = App.store.addBank(finalTitle, res.questions);
+      if (pendingLook) App.store.setBankLook(final, pendingLook.icon, pendingLook.tone, pendingLook.logo);
       App.ui.toast("Bank “" + final + "” created with " + res.questions.length + " questions.", "ok");
     } else {
       const offset = App.store.appendToBank(target, res.questions);
@@ -401,6 +492,30 @@ App.views = App.views || {};
   }
 
   /* The AI exam-generation prompt (kept from the legacy app, tightened) */
+  /* Turns the current parse diagnostics into a plain-text report meant to be
+     pasted straight back to whichever AI generated the exam — each item
+     quotes the exact offending value and states the fix in terms of this
+     app's own formatting rules (see View.copyAIPrompt), so the AI can act on
+     it without any extra back-and-forth. */
+  function diagnosticsReportText(p) {
+    const lines = [
+      "The exam file you generated has formatting problems that ExamPro's importer caught — please fix these in the source and resend the corrected file. Don't change question content, only the formatting issues listed below.",
+      ""
+    ];
+    if (p.errorCount) {
+      lines.push("BLOCKING ERRORS (the bank can't be imported until these are fixed):");
+      p.errors.forEach(function (w, i) { lines.push((i + 1) + ". " + w.msg); });
+      lines.push("");
+    }
+    if (p.warningCount) {
+      lines.push("WARNINGS (importable, but double-check these):");
+      p.warnings.forEach(function (w, i) { lines.push((i + 1) + ". " + w.msg); });
+      lines.push("");
+    }
+    lines.push("Formatting reference: question headings are \"### N. Question text\", options are \"- [ ] Choice\", matching definitions are one \"Definition X: text\" per line with exactly one option per definition, and the answer key is a \"| Question Number | Correct Answer |\" table where matching answers list the options in definition order separated by commas.");
+    return lines.join("\n");
+  }
+
   View.copyAIPrompt = function () {
     const prompt = [
       "Please create an exam based on the content I provide you below.",
@@ -442,22 +557,7 @@ App.views = App.views || {};
       "[PASTE YOUR CONTENT HERE]"
     ].join("\n");
 
-    function fallback() {
-      const ta = document.createElement("textarea");
-      ta.value = prompt;
-      document.body.appendChild(ta);
-      ta.select();
-      try { document.execCommand("copy"); App.ui.toast("AI prompt copied to clipboard.", "ok"); }
-      catch (e) { App.ui.toast("Copy failed — select and copy manually.", "err"); }
-      ta.remove();
-    }
-
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(prompt).then(
-        function () { App.ui.toast("AI prompt copied to clipboard.", "ok"); },
-        fallback
-      );
-    } else fallback();
+    App.ui.copyText(prompt, "AI prompt copied to clipboard.");
   };
 
   App.views.importer = View;

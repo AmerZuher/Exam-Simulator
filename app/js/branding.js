@@ -73,46 +73,10 @@ window.App = window.App || {};
 
   /* ---------------- upload handling ---------------- */
 
-  /* Reads a user file into a storable data URI. Small SVGs are kept as vectors;
-     everything else is drawn onto a 256px canvas so localStorage stays small. */
+  /* Thin wrapper over the shared App.u.readImageFile (see UI-KIT.md) — kept
+     as B.readLogoFile so existing call sites don't need to change. */
   B.readLogoFile = function (file, done, fail) {
-    if (!file) return fail("No file selected.");
-    if (!/^image\//.test(file.type)) return fail("That file isn't an image.");
-    if (file.size > MAX_UPLOAD) return fail("Image is larger than 4 MB — try a smaller one.");
-
-    const reader = new FileReader();
-    reader.onerror = function () { fail("Could not read that file."); };
-
-    if (file.type === "image/svg+xml" && file.size <= SVG_INLINE_LIMIT) {
-      reader.onload = function () {
-        done("data:image/svg+xml," + encodeURIComponent(String(reader.result)));
-      };
-      reader.readAsText(file);
-      return;
-    }
-
-    reader.onload = function () {
-      const img = new Image();
-      img.onerror = function () { fail("That image could not be decoded."); };
-      img.onload = function () {
-        try {
-          const canvas = document.createElement("canvas");
-          canvas.width = canvas.height = RASTER_SIZE;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return done(String(reader.result));
-          /* cover, centred and cropped — fills the square, no letterboxing */
-          const scale = Math.max(RASTER_SIZE / img.width, RASTER_SIZE / img.height);
-          const w = Math.round(img.width * scale);
-          const h = Math.round(img.height * scale);
-          ctx.drawImage(img, (RASTER_SIZE - w) / 2, (RASTER_SIZE - h) / 2, w, h);
-          done(canvas.toDataURL("image/png"));
-        } catch (e) {
-          fail("Could not process that image.");
-        }
-      };
-      img.src = String(reader.result);
-    };
-    reader.readAsDataURL(file);
+    App.u.readImageFile(file, { maxBytes: MAX_UPLOAD, size: RASTER_SIZE, svgInlineLimit: SVG_INLINE_LIMIT }, done, fail);
   };
 
   /* ---------------- applying ---------------- */

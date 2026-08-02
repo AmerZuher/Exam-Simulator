@@ -20,6 +20,7 @@ window.App = window.App || {};
     x: '<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>',
     chevL: '<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>',
     chevR: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>',
+    chevDown: '<path stroke-linecap="round" stroke-linejoin="round" d="M5 9l7 7 7-7"/>',
     search: '<circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.2-3.2"/>',
     star: '<path stroke-linejoin="round" d="M12 3.6l2.5 5.2 5.7.7-4.2 3.9 1.1 5.6L12 16.4 6.9 19l1.1-5.6-4.2-3.9 5.7-.7L12 3.6z"/>',
     sparkle: '<path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3zM19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15zM5 2l.8 1.7L7.5 4.5 5.8 5.3 5 7l-.8-1.7L2.5 4.5l1.7-.8L5 2z"/>',

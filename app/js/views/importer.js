@@ -81,6 +81,17 @@ App.views = App.views || {};
       if (q.type === "matching") {
         if (!q.leftItems.length) { warnings.push({ msg: label + ": matching question has no leftItems — skipped." }); return; }
         if (!Object.keys(q.correctAnswers).length) warnings.push({ msg: label + ": no correctAnswers map — matches will be blank." });
+        if (q.rightItems.length && q.leftItems.length !== q.rightItems.length) {
+          warnings.push({ msg: label + ": " + q.rightItems.length + " rightItems but " + q.leftItems.length + " leftItems — matching needs exactly one option per definition." });
+        }
+        // grading does an exact string compare against rightItems, so any
+        // correctAnswers value absent from rightItems will never grade correct.
+        Object.keys(q.correctAnswers).forEach(function (k) {
+          const v = q.correctAnswers[k];
+          if (q.rightItems.length && q.rightItems.indexOf(v) === -1) {
+            warnings.push({ msg: label + ": correctAnswers[" + k + "] (\"" + v + "\") doesn't exactly match any rightItems entry — it will never grade correct." });
+          }
+        });
       } else {
         if (q.options.length < 2) { warnings.push({ msg: label + ": fewer than two options — skipped." }); return; }
         if (!Array.isArray(raw.correctIndices) || !raw.correctIndices.length) {

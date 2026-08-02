@@ -255,7 +255,19 @@ App.views = App.views || {};
   }
 
   function shuffleQuestionOptions(q) {
-    if (q.type === "matching") { q.rightItems = App.u.shuffle(q.rightItems); return q; }
+    if (q.type === "matching") {
+      // Shuffle which definition sits in which row (not just the hidden
+      // dropdown order) so shuffling is actually visible, then re-key
+      // correctAnswers to the new row positions.
+      const order = App.u.shuffle(q.leftItems.map(function (_, i) { return i; }));
+      const newLeft = order.map(function (li) { return q.leftItems[li]; });
+      const newCorrect = {};
+      order.forEach(function (li, newIdx) { newCorrect[newIdx] = q.correctAnswers[li]; });
+      q.leftItems = newLeft;
+      q.correctAnswers = newCorrect;
+      q.rightItems = App.u.shuffle(q.rightItems);
+      return q;
+    }
     const order = App.u.shuffle(q.options.map(function (_, i) { return i; }));
     const newOpts = order.map(function (oi) { return q.options[oi]; });
     const newCorrect = [];
@@ -444,7 +456,7 @@ App.views = App.views || {};
             return '<option value="' + u.esc(r) + '"' + (sel === r ? " selected" : "") + ">" + u.esc(r) + "</option>";
           }).join("");
           return (
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)">' +
+            '<div style="display:flex;flex-direction:column;gap:8px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)">' +
             '<div style="font-size:12.5px;font-weight:700">' + u.esc(left) + "</div>" +
             '<select class="select match-sel" data-li="' + li + '"><option value="">— choose a match —</option>' + opts + "</select>" +
             "</div>"

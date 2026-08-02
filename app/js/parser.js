@@ -159,6 +159,28 @@ window.App = window.App || {};
     return parts.map(stripMd).filter(Boolean);
   }
 
+  /* Pull every "Definition X: ..." / "Step N: ..." pair out of a line. Only
+     fires when the line itself opens with a label (preserves the old
+     line-must-start-with-label behavior) but then finds ALL labels in the
+     line, not just the first — so a paragraph that jams "Definition A: ...
+     Definition B: ..." onto one line still yields separate items instead of
+     one item whose text swallows every definition after the first. */
+  function extractDefinitions(line) {
+    if (!/^(?:Definition|Step)\s+[A-Za-z0-9]+\s*:/i.test(line)) return null;
+    const re = /(Definition|Step)\s+([A-Za-z0-9]+)\s*:\s*/gi;
+    const marks = [];
+    let m;
+    while ((m = re.exec(line))) marks.push({ start: m.index, end: re.lastIndex, label: m[1] + " " + m[2] });
+    if (!marks.length) return null;
+    const out = [];
+    for (let i = 0; i < marks.length; i++) {
+      const end = i + 1 < marks.length ? marks[i + 1].start : line.length;
+      const text = stripMd(line.slice(marks[i].end, end));
+      out.push(marks[i].label + ": " + text);
+    }
+    return out;
+  }
+
   /* Map a letter answer ("B", "c)") to an option index */
   function letterIndex(ans) {
     const m = String(ans).trim().match(/^([A-Za-z])\s*[).:]?\s*$/);
@@ -253,9 +275,12 @@ cur = {
 
       if (/!\[[^\]]*\]\([^)]*\)/.test(line)) continue;
 
-      // matching left-side definition lines: "Definition A: ..." / "Step 1: ..."
-      const defMatch = line.match(/^((?:Definition|Step)\s+[A-Za-z0-9]+)\s*:\s*(.+)$/i);
-      if (defMatch) { cur.leftItems.push(defMatch[1] + ": " + stripMd(defMatch[2])); continue; }
+      // matching left-side definition lines: "Definition A: ..." / "Step 1: ...".
+      // A line may cram several "Definition X: ..." pairs into one paragraph
+      // (a common malformed AI-generated shape) — split all of them out
+      // instead of swallowing everything after the first label into one item.
+      const defs = extractDefinitions(line);
+      if (defs) { defs.forEach(function (d) { cur.leftItems.push(d); }); continue; }
 
       // option bullets
       const optMatch = line.match(/^[-*+]\s*\[\s*[xX]?\s*\]\s*(.+)$/) || line.match(/^[-*+]\s+(\S.*)$/);
@@ -286,9 +311,39 @@ cur = {
           warnings.push({ qid: q.origId, msg: label + ": matching question has no 'Definition X:' lines — using placeholders." });
           q.leftItems = ["Definition A", "Definition B", "Definition C"];
         }
+
+        // The UI renders one dropdown per definition, populated with every
+        // option — a mismatched count means some options never appear (or
+        // some definitions get no distinct slot), so flag it plainly.
+        if (q.rightItems.length && q.leftItems.length !== q.rightItems.length) {
+          warnings.push({
+            qid: q.origId,
+            msg: label + ": " + q.rightItems.length + " option(s) but " + q.leftItems.length +
+              " definition(s) parsed — matching needs exactly one option per definition. " +
+              "Check that every \"Definition X:\" is on its own line rather than run together in one paragraph."
+          });
+        }
+
+        // Grading compares the picked option string to correctAnswers[idx]
+        // verbatim, so an answer-key value that doesn't exactly match one of
+        // the parsed options will silently never grade correct. Snap to the
+        // exact option text on a normalized match; warn otherwise.
         const vals = splitAnswerValues(q.answerText, true);
+        const rightNorm = q.rightItems.map(norm);
         vals.forEach(function (v, idx) {
-          if (idx < q.leftItems.length) q.correctAnswers[idx] = v;
+          if (idx >= q.leftItems.length) return;
+          const ri = rightNorm.indexOf(norm(v));
+          if (ri >= 0) {
+            q.correctAnswers[idx] = q.rightItems[ri];
+          } else {
+            q.correctAnswers[idx] = v;
+            if (q.rightItems.length) {
+              warnings.push({
+                qid: q.origId,
+                msg: label + ": answer \"" + v + "\" (definition " + (idx + 1) + ") doesn't exactly match any parsed option — it will never grade correct."
+              });
+            }
+          }
         });
         if (!Object.keys(q.correctAnswers).length && q.rightItems.length) {
           q.rightItems.forEach(function (item, idx) {

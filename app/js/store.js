@@ -11,6 +11,7 @@ window.App = window.App || {};
     srs: "exampro_srs_v1",
     perf: "exampro_perf_v1",
     activity: "exampro_activity_v1",
+    groups: "exampro_groups_v1",
     legacyBanks: "custom_exams_db"
   };
 
@@ -46,7 +47,8 @@ settings: { theme: "light", accent: "indigo", sidebarCollapsed: false, dailyGoal
     dueDates: {},    // legacy v1 schedule — migrated into `srs` on load
     srs: {},         // name -> { qid: { ease, interval, reps, lapses, due, last, grade } }
     perf: {},        // name -> { qid: { seen, correct, streak, worst, ms, last } }
-    activity: {}     // "YYYY-MM-DD" -> { reviews, answered, correct, seconds, attempts }
+    activity: {},    // "YYYY-MM-DD" -> { reviews, answered, correct, seconds, attempts }
+    groups: {}       // name -> { name, createdAt, icon, tone, logo, links: [{id,label,url}] }
     },
 
     load: function () {
@@ -60,6 +62,7 @@ settings: { theme: "light", accent: "indigo", sidebarCollapsed: false, dailyGoal
       this.state.srs = readJSON(KEYS.srs, {});
       this.state.perf = readJSON(KEYS.perf, {});
       this.state.activity = readJSON(KEYS.activity, {});
+      this.state.groups = readJSON(KEYS.groups, {});
       if (App.srs) App.srs.migrate();
     },
 
@@ -89,6 +92,7 @@ settings: { theme: "light", accent: "indigo", sidebarCollapsed: false, dailyGoal
     saveSrs: function () { writeJSON(KEYS.srs, this.state.srs); },
     savePerf: function () { writeJSON(KEYS.perf, this.state.perf); },
     saveActivity: function () { writeJSON(KEYS.activity, this.state.activity); },
+    saveGroups: function () { writeJSON(KEYS.groups, this.state.groups); },
 
     /* ---- banks ---- */
     bankNames: function () { return Object.keys(this.state.banks); },
@@ -165,6 +169,144 @@ settings: { theme: "light", accent: "indigo", sidebarCollapsed: false, dailyGoal
       if (this.state.session && this.state.session.bankKey === oldName) { this.state.session.bankKey = newName; this.saveSession(); }
       this.saveBanks(); this.saveHistory(); this.saveMastered(); this.saveSrs(); this.savePerf();
       return newName;
+    },
+
+    /* ---- exam groups ----
+       A group is a folder-like container for related banks. Membership is
+       stored on the bank itself (bank.examGroup = group name), not as a list
+       on the group, so it survives bank renames for free and never needs
+       reconciling with a separate members array. */
+    groupNames: function () { return Object.keys(this.state.groups); },
+    getGroup: function (name) { return this.state.groups[name] || null; },
+
+    groupIcon: function (name) { const g = this.state.groups[name]; return (g && g.icon) || "layers"; },
+    groupTone: function (name) { const g = this.state.groups[name]; return (g && g.tone) || "acc"; },
+    groupLogo: function (name) { const g = this.state.groups[name]; return (g && g.logo) || null; },
+    setGroupLook: function (name, icon, tone, logo) {
+      const g = this.state.groups[name];
+      if (!g) return false;
+      if (logo) { g.logo = logo; delete g.icon; }
+      else if (icon) { g.icon = icon; delete g.logo; }
+      if (tone) g.tone = tone;
+      this.saveGroups();
+      return true;
+    },
+
+    addGroup: function (name) {
+      let final = (name || "New group").trim() || "New group";
+      let i = 2;
+      while (this.state.groups[final]) { final = name + " (" + i + ")"; i++; }
+      this.state.groups[final] = { name: final, createdAt: Date.now(), icon: "layers", tone: "acc", description: "", links: [] };
+      this.saveGroups();
+      return final;
+    },
+
+    setGroupDescription: function (name, desc) {
+      const g = this.state.groups[name];
+      if (!g) return false;
+      g.description = (desc || "").trim();
+      this.saveGroups();
+      return true;
+    },
+
+    renameGroup: function (oldName, newName) {
+      newName = (newName || "").trim();
+      if (!newName || newName === oldName) return oldName;
+      if (this.state.groups[newName]) return null; // name taken
+      const g = this.state.groups[oldName];
+      if (!g) return null;
+      g.name = newName;
+      this.state.groups[newName] = g;
+      delete this.state.groups[oldName];
+      const self = this;
+      this.bankNames().forEach(function (n) {
+        const b = self.state.banks[n];
+        if (b && b.examGroup === oldName) b.examGroup = newName;
+      });
+      this.saveGroups(); this.saveBanks();
+      return newName;
+    },
+
+    deleteGroup: function (name) {
+      const self = this;
+      this.bankNames().forEach(function (n) {
+        const b = self.state.banks[n];
+        if (b && b.examGroup === name) delete b.examGroup;
+      });
+      delete this.state.groups[name];
+      this.saveGroups(); this.saveBanks();
+    },
+
+    addGroupLink: function (name, label, url) {
+      const g = this.state.groups[name];
+      if (!g) return null;
+      if (!g.links) g.links = [];
+      const link = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), label: label, url: url };
+      g.links.push(link);
+      this.saveGroups();
+      return link;
+    },
+    updateGroupLink: function (name, linkId, label, url) {
+      const g = this.state.groups[name];
+      if (!g || !g.links) return false;
+      const link = g.links.find(function (l) { return l.id === linkId; });
+      if (!link) return false;
+      link.label = label; link.url = url;
+      this.saveGroups();
+      return true;
+    },
+    removeGroupLink: function (name, linkId) {
+      const g = this.state.groups[name];
+      if (!g || !g.links) return;
+      g.links = g.links.filter(function (l) { return l.id !== linkId; });
+      this.saveGroups();
+    },
+
+    /* bank <-> group membership (single-owner: setting a group clears any previous one) */
+    setBankGroup: function (bankName, groupName) {
+      const b = this.state.banks[bankName];
+      if (!b) return;
+      if (groupName) b.examGroup = groupName; else delete b.examGroup;
+      this.saveBanks();
+    },
+    bankGroup: function (bankName) {
+      const b = this.state.banks[bankName];
+      return (b && b.examGroup) || "";
+    },
+    groupMembers: function (name) {
+      const self = this;
+      return this.bankNames().filter(function (n) { return self.state.banks[n].examGroup === name; });
+    },
+    ungroupedBankNames: function () {
+      const self = this;
+      return this.bankNames().filter(function (n) { return !self.state.banks[n].examGroup; });
+    },
+
+    groupStats: function (name) {
+      const self = this;
+      const members = this.groupMembers(name);
+      let questions = 0, attempts = 0, sum = 0, mastered = 0, due = 0, retentionWeighted = 0;
+      members.forEach(function (n) {
+        const b = self.state.banks[n];
+        questions += b.questions.length;
+        const h = self.state.history[n] || [];
+        attempts += h.length;
+        h.forEach(function (a) { sum += a.pct; });
+        mastered += self.masteredCount(n);
+        due += App.srs.dueCount(n);
+        retentionWeighted += App.srs.retention(n) * b.questions.length;
+      });
+      return {
+        banks: members.length,
+        members: members,
+        questions: questions,
+        attempts: attempts,
+        avg: attempts ? Math.round(sum / attempts) : 0,
+        mastered: mastered,
+        due: due,
+        masteryPct: questions ? Math.round((mastered / questions) * 100) : 0,
+        retention: questions ? Math.round(retentionWeighted / questions) : 0
+      };
     },
 
     /* ---- history ---- */

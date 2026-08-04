@@ -180,6 +180,16 @@ window.App = window.App || {};
       (opts.subtitle ? '<div class="modal-sub">' + u.esc(opts.subtitle) + "</div>" : "") + "</div>" +
       '<button class="icon-btn" data-x>' + App.icon("x", 15) + "</button></div>" +
 
+      (opts.nameField
+        ? "<label class='field-lbl'>Name</label>" +
+          '<input class="input" id="pick-name" value="' + u.esc(opts.nameValue || "") + '" maxlength="60" style="margin-bottom:16px">'
+        : "") +
+
+      (opts.descField
+        ? "<label class='field-lbl'>Description</label>" +
+          '<textarea class="textarea" id="pick-desc" maxlength="200" rows="2" placeholder="What ties these banks together?" style="margin-bottom:16px;font-family:inherit;font-size:13px;font-weight:500;line-height:1.5">' + u.esc(opts.descValue || "") + "</textarea>"
+        : "") +
+
       '<div class="picker-preview">' +
       '<span class="bank-badge lg' + (logo ? " has-img" : " tone-" + tone) + '" id="pick-preview">' +
       (logo ? '<img class="bank-badge-img" src="' + u.esc(logo) + '" alt="">' : App.icon(icon, 30)) + "</span>" +
@@ -253,8 +263,11 @@ window.App = window.App || {};
 
     veil.querySelectorAll("[data-x]").forEach(function (b) { b.onclick = closeModal; });
     veil.querySelector("#pick-save").onclick = function () {
+      const result = { icon: logo ? null : icon, tone: tone, logo: logo };
+      if (opts.nameField) result.name = veil.querySelector("#pick-name").value.trim();
+      if (opts.descField) result.description = veil.querySelector("#pick-desc").value.trim();
       closeModal();
-      if (opts.onSave) opts.onSave({ icon: logo ? null : icon, tone: tone, logo: logo });
+      if (opts.onSave) opts.onSave(result);
     };
   };
 
@@ -271,6 +284,145 @@ window.App = window.App || {};
         if (onSaved) onSaved();
       }
     });
+  };
+
+  /* Generic chain-link glyph, inlined as a data URI so a link whose favicon
+     404s (or whose host blocks the favicon service) still gets *something*
+     instead of a broken image icon. */
+  const LINK_FALLBACK_ICON = "data:image/svg+xml," + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#9aa3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>'
+  );
+
+  /* A link's site icon — YouTube's mark for a youtube.com link, GitHub's for
+     github.com, etc. — resolved straight from the URL via App.u.faviconUrl,
+     with the chain-link glyph above as the onerror fallback. */
+  UI.linkFavicon = function (url, size, cls) {
+    size = size || 16;
+    const src = App.u.faviconUrl(url, Math.max(32, size * 2)) || LINK_FALLBACK_ICON;
+    return '<img src="' + U().esc(src) + '" alt="" class="link-favicon' + (cls ? " " + cls : "") + '" width="' + size + '" height="' + size +
+      '" onerror="this.onerror=null;this.src=\'' + LINK_FALLBACK_ICON + "'\">";
+  };
+
+  /* ---------------- exam-group badge ----------------
+     Display-only — same badge look as banks (App.icon("layers") as the
+     default mark). Groups have no per-badge click-to-edit; icon changes go
+     through UI.editGroup instead, alongside the name. */
+  UI.groupBadge = function (groupName, size, cls, attrs) {
+    return UI.badgeHtml({
+      icon: App.store.groupIcon(groupName),
+      tone: App.store.groupTone(groupName),
+      logo: App.store.groupLogo(groupName)
+    }, size, cls, attrs);
+  };
+
+  /* ---------------- exam-group editor (name + icon, combined) ----------------
+     One "Edit" entry point per group (card and detail page both use this)
+     instead of separate rename / change-icon actions.
+     `hooks.onSaved()` fires whenever anything is saved; `hooks.onRenamed(newName)`
+     additionally fires only when the name actually changed, so a caller whose
+     route embeds the group's name (the detail page) can navigate. */
+  UI.editGroup = function (groupName, hooks) {
+    hooks = hooks || {};
+    const g = App.store.getGroup(groupName);
+    UI.pickLook({
+      title: "Edit group",
+      subtitle: groupName,
+      nameField: true,
+      nameValue: groupName,
+      descField: true,
+      descValue: g && g.description,
+      icon: App.store.groupIcon(groupName),
+      tone: App.store.groupTone(groupName),
+      logo: App.store.groupLogo(groupName),
+      onSave: function (result) {
+        App.store.setGroupLook(groupName, result.icon, result.tone, result.logo);
+        App.store.setGroupDescription(groupName, result.description);
+        let finalName = groupName;
+        if (result.name && result.name !== groupName) {
+          const res = App.store.renameGroup(groupName, result.name);
+          if (res === null) UI.toast("That name is already taken — icon saved, name unchanged.", "err");
+          else finalName = res;
+        }
+        if (finalName === groupName) {
+          UI.toast("Group updated.", "ok");
+          if (hooks.onSaved) hooks.onSaved();
+        } else {
+          UI.toast("Group updated.", "ok");
+          if (hooks.onRenamed) hooks.onRenamed(finalName);
+          else if (hooks.onSaved) hooks.onSaved();
+        }
+      }
+    });
+  };
+
+  /* ---------------- exam-group member picker ----------------
+     A bank belongs to at most one group, so checking it here for this group
+     silently moves it out of whichever group (if any) it was already in. */
+  UI.manageGroupMembers = function (groupName, onSaved) {
+    const u = U(), store = App.store;
+    const names = store.bankNames();
+
+    function rowHtml(n) {
+      const b = store.getBank(n);
+      const inThis = b.examGroup === groupName;
+      const otherGroup = b.examGroup && !inThis ? b.examGroup : null;
+      return '<label class="gmember-row' + (inThis ? " on" : "") + '" data-search="' + u.esc(n.toLowerCase()) + '">' +
+        '<input type="checkbox" data-bank="' + u.esc(n) + '"' + (inThis ? " checked" : "") + ">" +
+        UI.bankBadge(n, 15, "sm") +
+        '<span class="gmember-name">' + u.esc(n) + "</span>" +
+        (otherGroup ? '<span class="gmember-note">in ' + u.esc(otherGroup) + "</span>" : "") +
+        '<span class="gmember-check">' + App.icon("check", 12, 3) + "</span>" +
+        "</label>";
+    }
+
+    const rows = names.length ? names.map(rowHtml).join("") : '<div class="glink-empty">No exam banks yet — import one first.</div>';
+
+    const veil = openModal(
+      '<div class="modal-head"><div>' +
+      '<div class="modal-title">Manage banks</div>' +
+      '<div class="modal-sub">' + u.esc(groupName) + "</div></div>" +
+      '<button class="icon-btn" data-x>' + App.icon("x", 15) + "</button></div>" +
+      (names.length > 6 ? '<input class="input" id="gmember-search" placeholder="Filter banks…" style="margin-bottom:10px">' : "") +
+      '<div class="gmember-list">' + rows + "</div>" +
+      '<div class="modal-foot">' +
+      '<button class="btn btn-ghost" data-x>Cancel</button>' +
+      '<button class="btn btn-primary" id="gmember-save">' + App.icon("check", 15) + "Save</button>" +
+      "</div>"
+    );
+
+    veil.querySelectorAll("[data-x]").forEach(function (b) { b.onclick = closeModal; });
+
+    veil.querySelectorAll("[data-bank]").forEach(function (cb) {
+      cb.addEventListener("change", function () {
+        cb.closest(".gmember-row").classList.toggle("on", cb.checked);
+      });
+    });
+
+    const search = veil.querySelector("#gmember-search");
+    if (search) {
+      search.addEventListener("input", function () {
+        const term = search.value.trim().toLowerCase();
+        veil.querySelectorAll(".gmember-row").forEach(function (row) {
+          row.style.display = (!term || row.dataset.search.indexOf(term) !== -1) ? "" : "none";
+        });
+      });
+      search.focus();
+    }
+
+    veil.querySelector("#gmember-save").onclick = function () {
+      veil.querySelectorAll("[data-bank]").forEach(function (cb) {
+        const n = cb.dataset.bank;
+        const b = store.getBank(n);
+        if (!b) return;
+        const inThis = b.examGroup === groupName;
+        if (cb.checked && !inThis) store.setBankGroup(n, groupName);
+        else if (!cb.checked && inThis) store.setBankGroup(n, null);
+      });
+      closeModal();
+      UI.toast("Group membership updated.", "ok");
+      if (onSaved) onSaved();
+    };
   };
 
   /* ---------------- svg ring ---------------- */

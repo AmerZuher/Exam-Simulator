@@ -656,6 +656,150 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
 .mastery-bar { height: 5px; border-radius: 99px; background: var(--surface-3); overflow: hidden; }
 .mastery-bar > i { display: block; height: 100%; border-radius: 99px; background: var(--acc-grad); transition: width 0.6s var(--ease); }
 
+/* ---------- Exam Group cards ---------- */
+.group-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; align-items: stretch; }
+/* Same padding/gap as .bank-card, same badge size, same fixed-height trick
+   (description line-clamped, links row a fixed-height slot) — a group card
+   should read as a sibling of the bank cards, not a different shape. Grid
+   stretch (default align-items on a grid) squares up any tiny remainder
+   across a row, same as .bank-grid already relies on. */
+.group-card { display: flex; flex-direction: column; padding: 19px; gap: 14px; position: relative; min-width: 0; overflow: hidden; }
+
+.group-desc {
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--muted);
+  min-height: 2.9em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.group-desc.is-blank { opacity: 0.55; font-style: italic; }
+
+.group-meta-row { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
+.group-meta-item { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: var(--muted); }
+.group-meta-item svg { color: var(--acc); opacity: 0.8; flex-shrink: 0; }
+.group-meta-item b { color: var(--ink); font-weight: 800; }
+
+/* A site's own logo (favicon) next to its link — see App.u.faviconUrl */
+.link-favicon { border-radius: 4px; flex-shrink: 0; object-fit: contain; background: var(--surface-3); }
+
+.group-links-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
+}
+.group-link-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 5px 12px 5px 5px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  text-decoration: none;
+  max-width: 180px;
+  flex-shrink: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.group-link-pill:hover { color: var(--acc); border-color: var(--acc-line); background: var(--acc-softer); }
+
+/* ---------- Exam Group: links section (detail page) ----------
+   Each link is its own hoverable tile — favicon, label, url — with the
+   remove button tucked into the corner until you hover, so the grid reads
+   as reference cards rather than a settings list. */
+.glinks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.glink-tile {
+  position: relative;
+  display: flex;
+  padding: 10px 30px 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.glink-tile:hover { border-color: var(--acc-line); box-shadow: var(--sh-1); transform: translateY(-1px); }
+.glink-open { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; color: var(--ink); text-decoration: none; }
+.glink-open:hover .glink-label { color: var(--acc); }
+.glink-info { display: flex; flex-direction: column; min-width: 0; }
+.glink-label { font-size: 12.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.15s ease; }
+.glink-url { font-size: 10.5px; color: var(--muted); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.glink-remove {
+  position: absolute;
+  top: 6px; right: 6px;
+  width: 22px; height: 22px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.glink-tile:hover .glink-remove, .glink-remove:focus-visible { opacity: 1; }
+.glink-empty { font-size: 12px; color: var(--muted); font-weight: 500; padding: 6px 2px 16px; }
+
+.glink-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 14px; border-top: 1px dashed var(--line); }
+.glink-form .input { flex: 1; min-width: 140px; }
+.glink-form #glink-label { flex: 0 0 160px; }
+.glink-preview-wrap {
+  display: grid;
+  place-items: center;
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.glink-form #glink-preview { border-radius: 5px; }
+
+.group-links-panel { padding: 16px; border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sh-1); }
+
+/* ---------- Exam Group: member picker modal ---------- */
+.gmember-list { display: flex; flex-direction: column; gap: 3px; max-height: 340px; overflow-y: auto; margin: 4px 0 6px; }
+.gmember-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.gmember-row:hover { background: var(--surface-2); }
+.gmember-row.on { background: var(--acc-softer); border-color: var(--acc-line); }
+.gmember-row input[type="checkbox"] { position: absolute; opacity: 0; width: 0; height: 0; }
+.gmember-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gmember-note { font-size: 10.5px; color: var(--muted); font-weight: 700; background: var(--surface-3); padding: 2px 8px; border-radius: 99px; flex-shrink: 0; }
+.gmember-check {
+  display: grid;
+  place-items: center;
+  width: 20px; height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid var(--line);
+  color: transparent;
+  flex-shrink: 0;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.gmember-row.on .gmember-check { background: var(--acc); border-color: var(--acc); color: #fff; }
+
+/* ---------- Exam Group: detail page header ---------- */
+.group-head { display: flex; align-items: flex-start; gap: 14px; }
+.group-head-name { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.25; }
+.group-head-desc { font-size: 12.5px; font-weight: 500; color: var(--muted); margin-top: 6px; max-width: 60ch; }
+.group-head-desc.is-blank { opacity: 0.55; font-style: italic; }
+
 /* ---------- Chips ---------- */
 .chip {
   display: inline-flex;

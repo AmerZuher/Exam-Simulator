@@ -9,6 +9,8 @@ App.views = App.views || {};
     const u = App.u, store = App.store, ui = App.ui;
     const stats = store.globalStats();
     const names = store.bankNames();
+    const ungrouped = store.ungroupedBankNames();
+    const groupNames = store.groupNames();
     const session = store.state.session;
     const isServed = location.protocol !== "file:";
 
@@ -23,6 +25,7 @@ App.views = App.views || {};
       '<div class="hero-actions">' +
       '<button class="btn btn-light" data-act="import">' + App.icon("upload", 16) + "Import question bank</button>" +
       '<button class="btn btn-light" data-act="builder">' + App.icon("layers", 16) + "Custom exam</button>" +
+      '<button class="btn btn-ghost" data-act="new-group">' + App.icon("layers", 16) + "Create group</button>" +
       '<button class="btn btn-ghost" data-act="ai">' + App.icon("robot", 16) + "Generate with AI</button>" +
       (isServed && !names.length ? '<button class="btn btn-ghost" data-act="samples">' + App.icon("sparkle", 16) + "Load sample banks</button>" : "") +
       "</div></section>" +
@@ -58,9 +61,28 @@ App.views = App.views || {};
         planHtml();
     }
 
-    /* banks */
+    /* exam groups */
     html +=
-      '<div class="sec-head"><h3>Exam banks</h3><span class="count-badge">' + names.length + " total</span>" +
+      '<div class="sec-head"><h3>Exam Groups</h3>' +
+      (groupNames.length ? '<span class="count-badge">' + groupNames.length + " total</span>" : "") +
+      '<div class="sec-actions"><button class="btn btn-ghost btn-sm" data-act="new-group">' + App.icon("layers", 14) + "New group</button></div></div>";
+
+    if (!groupNames.length) {
+      html += App.ui.empty({
+        icon: "layers",
+        title: "No exam groups yet",
+        desc: "Bundle related exam banks — like everything under one certification track — into a group with shared progress and reference links.",
+        actionsHtml: '<button class="btn btn-primary" data-act="new-group">' + App.icon("layers", 15) + "Create a group</button>"
+      });
+    } else {
+      html += '<div class="group-grid">';
+      groupNames.forEach(function (name, i) { html += groupCard(name, i); });
+      html += "</div>";
+    }
+
+    /* banks (ungrouped only — a bank in a group only ever appears there) */
+    html +=
+      '<div class="sec-head" style="margin-top:34px"><h3>Exam banks</h3><span class="count-badge">' + ungrouped.length + " total</span>" +
       '<div class="sec-actions"><button class="btn btn-ghost btn-sm" data-act="import">' + App.icon("upload", 14) + "Import</button></div></div>";
 
     if (!names.length) {
@@ -72,9 +94,16 @@ App.views = App.views || {};
           '<button class="btn btn-primary" data-act="import">' + App.icon("upload", 15) + "Open importer</button>" +
           (isServed ? '<button class="btn btn-ghost" data-act="samples">' + App.icon("sparkle", 15) + "Load bundled samples</button>" : "")
       });
+    } else if (!ungrouped.length) {
+      html += App.ui.empty({
+        icon: "check",
+        title: "All banks are organized into groups",
+        desc: "Every exam bank you have belongs to a group above. Remove one from its group to see it here.",
+        actionsHtml: '<button class="btn btn-ghost" data-act="import">' + App.icon("upload", 15) + "Import another bank</button>"
+      });
     } else {
       html += '<div class="bank-grid">';
-      names.forEach(function (name, i) { html += bankCard(name, i); });
+      ungrouped.forEach(function (name, i) { html += bankCard(name, i); });
       html += "</div>";
     }
 
@@ -229,41 +258,64 @@ App.views = App.views || {};
     );
   }
 
-  function wire(wrap) {
+  /* Every group card is the same width/height no matter how much content it
+     holds — no bank-name chips (those live only on the detail page), and the
+     links row is a fixed-height slot rather than something that grows the
+     card when a group happens to have more references. */
+  function groupCard(name, i) {
     const u = App.u, store = App.store, ui = App.ui;
-    const rerender = function () { View.render(document.getElementById("view")); };
+    const g = store.getGroup(name);
+    const st = store.groupStats(name);
+    const desc = (g && g.description) || "";
 
-    ui.wireBankBadges(wrap, function () { rerender(); App.main.renderSidebar("dashboard"); });
+    const links = (g && g.links) || [];
+    const linksRow = links.map(function (l) {
+      return '<a class="group-link-pill" href="' + u.esc(l.url) + '" target="_blank" rel="noopener noreferrer" title="' + u.esc(l.label) + '">' +
+        ui.linkFavicon(l.url, 17) + u.esc(l.label) + "</a>";
+    }).join("");
+
+    return (
+      '<article class="card card-hover group-card rise" style="animation-delay:' + (0.08 + i * 0.05) + 's">' +
+      '<div class="bank-top">' +
+      ui.groupBadge(name, 20) +
+      '<div style="min-width:0"><div class="bank-name">' + u.esc(name) + "</div>" +
+      '<div class="group-meta-row">' +
+      '<span class="group-meta-item">' + App.icon("book", 12, 2.2) + "<b>" + st.banks + "</b> exam" + (st.banks === 1 ? "" : "s") + "</span>" +
+      '<span class="group-meta-item">' + App.icon("layers", 12, 2.2) + "<b>" + st.questions + "</b> question" + (st.questions === 1 ? "" : "s") + "</span>" +
+      "</div></div>" +
+      '<div class="bank-menu">' +
+      '<button class="icon-btn" data-gedit="' + u.esc(name) + '" title="Edit group" aria-label="Edit group">' + App.icon("edit", 15) + "</button>" +
+      "</div></div>" +
+      '<div class="group-desc' + (desc ? "" : " is-blank") + '">' + (desc ? u.esc(desc) : "No description added.") + "</div>" +
+      '<div title="Combined mastery and retention across every bank in this group">' +
+      '<div style="display:flex;justify-content:space-between;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px">' +
+      "<span>Mastery " + st.masteryPct + "%</span><span>Retention " + st.retention + "%</span></div>" +
+      '<div class="mastery-bar"><i style="width:' + st.masteryPct + '%"></i>' +
+      '<b class="retain-mark" style="left:' + st.retention + '%"></b></div>' +
+      "</div>" +
+      '<div class="bank-foot">' +
+      '<div class="group-links-row">' + linksRow + "</div>" +
+      '<div class="bank-actions">' +
+      '<button class="btn btn-primary btn-sm" data-act="open-group" data-key="' + u.esc(name) + '" style="flex:1;justify-content:center">' + App.icon("arrowR", 13) + "Open group</button>" +
+      "</div></div></article>"
+    );
+  }
+
+  function closeMenus() { document.querySelectorAll(".menu-pop").forEach(function (m) { m.remove(); }); }
+
+  /* Bank-card behaviour (badges, study/review/start, the "..." dropdown) \u2014
+     shared by the Dashboard's own bank-grid and the Exam Group detail page's
+     filtered bank-grid, since both render identical bankCard() markup. */
+  function wireBankGrid(wrap, rerender) {
+    const u = App.u, store = App.store, ui = App.ui;
+
+    ui.wireBankBadges(wrap, function () { rerender(); App.main.renderSidebar(App.router.currentName); });
 
     App.u.on(wrap, "click", "[data-act]", function (e, el) {
       const act = el.dataset.act, key = el.dataset.key;
-      if (act === "import") App.router.go("#/import");
-      else if (act === "builder") App.views.exam.openBuilder();
-      else if (act === "ai") App.views.importer.copyAIPrompt();
-      else if (act === "samples") loadSamples();
-      else if (act === "start") App.views.exam.openSetup(key);
+      if (act === "start") App.views.exam.openSetup(key);
       else if (act === "study") App.router.go("#/study/" + encodeURIComponent(key));
-      else if (act === "progress") App.router.go("#/progress");
-      else if (act === "review" || act === "review-bank") App.views.review.start(key || el.dataset.key, {});
-      else if (act === "review-due") {
-        const target = store.bankNames().filter(function (n) { return App.srs.dueCount(n); })[0];
-        if (target) App.views.review.start(target, {});
-        else App.ui.toast("Nothing is due right now.", "info");
-      } else if (act === "review-any") App.router.go("#/review");
-      else if (act === "drill-weak") {
-        const weak = App.srs.weakest(null, 25);
-        if (!weak.length) { ui.toast("No weak questions recorded yet.", "info"); return; }
-        App.views.exam.launchMixed(weak.map(function (w) { return { bank: w.bank, id: w.q.id }; }),
-          { passPct: 80, label: "Weak spots" });
-      }
-      else if (act === "resume-session") App.views.exam.resumeSession();
-      else if (act === "discard-session") {
-        ui.confirm({ title: "Discard in-progress exam?", desc: "Your saved progress for this session will be removed.", confirmLabel: "Discard", danger: true }, function () {
-          store.clearSession();
-          ui.toast("Session discarded.", "info");
-          rerender();
-        });
-      }
+      else if (act === "review" || act === "review-bank") App.views.review.start(key, {});
     });
 
     /* bank card dropdown menus */
@@ -288,7 +340,7 @@ App.views = App.views || {};
         ui.prompt({ title: "Rename bank", desc: "Give this question bank a new name.", value: name, confirmLabel: "Rename" }, function (v) {
           const res = store.renameBank(name, v);
           if (res === null) ui.toast("That name is already taken.", "err");
-          else { ui.toast("Bank renamed to \u201C" + res + "\u201D.", "ok"); rerender(); }
+          else { ui.toast("Bank renamed to \u201C" + res + "\u201D.", "ok"); rerender(); App.main.renderSidebar(App.router.currentName); }
         });
       };
       pop.querySelector('[data-m="export"]').onclick = function () {
@@ -303,12 +355,92 @@ App.views = App.views || {};
           store.deleteBank(name);
           ui.toast("Bank deleted.", "info");
           rerender();
+          App.main.renderSidebar(App.router.currentName);
         });
       };
       setTimeout(function () { document.addEventListener("click", closeMenus, { once: true }); }, 0);
     });
+  }
+  View.wireBankGrid = wireBankGrid;
+  View.bankCard = bankCard;
+  View.statTile = statTile;
+  View.wireGroupActions = wireGroupActions;
 
-    function closeMenus() { document.querySelectorAll(".menu-pop").forEach(function (m) { m.remove(); }); }
+  function wire(wrap) {
+    const u = App.u, store = App.store, ui = App.ui;
+    const rerender = function () { View.render(document.getElementById("view")); };
+
+    wireBankGrid(wrap, rerender);
+
+    App.u.on(wrap, "click", "[data-act]", function (e, el) {
+      const act = el.dataset.act, key = el.dataset.key;
+      if (act === "import") App.router.go("#/import");
+      else if (act === "builder") App.views.exam.openBuilder();
+      else if (act === "ai") App.views.importer.copyAIPrompt();
+      else if (act === "samples") loadSamples();
+      else if (act === "progress") App.router.go("#/progress");
+      else if (act === "review-due") {
+        const target = store.bankNames().filter(function (n) { return App.srs.dueCount(n); })[0];
+        if (target) App.views.review.start(target, {});
+        else App.ui.toast("Nothing is due right now.", "info");
+      } else if (act === "review-any") App.router.go("#/review");
+      else if (act === "drill-weak") {
+        const weak = App.srs.weakest(null, 25);
+        if (!weak.length) { ui.toast("No weak questions recorded yet.", "info"); return; }
+        App.views.exam.launchMixed(weak.map(function (w) { return { bank: w.bank, id: w.q.id }; }),
+          { passPct: 80, label: "Weak spots" });
+      }
+      else if (act === "resume-session") App.views.exam.resumeSession();
+      else if (act === "discard-session") {
+        ui.confirm({ title: "Discard in-progress exam?", desc: "Your saved progress for this session will be removed.", confirmLabel: "Discard", danger: true }, function () {
+          store.clearSession();
+          ui.toast("Session discarded.", "info");
+          rerender();
+        });
+      }
+      else if (act === "new-group") {
+        ui.prompt({ title: "New exam group", desc: "Give this group a name \u2014 e.g. a certification track.", placeholder: "Group name", confirmLabel: "Create" }, function (v) {
+          const name = store.addGroup(v);
+          ui.toast("Group \u201C" + name + "\u201D created.", "ok");
+          rerender();
+        });
+      }
+      else if (act === "open-group") App.router.go("#/group/" + encodeURIComponent(key));
+    });
+
+    wireGroupActions(wrap, rerender);
+  }
+
+  /* Exam-group card actions: a single Edit button (name + icon together) and
+     a Delete button — no dropdown, no separate rename/icon/links/members
+     entries. Managing a group's links or member banks only happens on its
+     detail page. `hooks.onRenamed(newName)` / `hooks.onDeleted()` let that
+     detail page (whose route embeds the group's name) navigate instead of
+     just re-rendering in place — the dashboard leaves them out since its own
+     list re-render already reflects any rename/delete. */
+  function wireGroupActions(wrap, rerender, hooks) {
+    hooks = hooks || {};
+    const store = App.store, ui = App.ui;
+
+    App.u.on(wrap, "click", "[data-gedit]", function (e, el) {
+      e.stopPropagation();
+      ui.editGroup(el.dataset.gedit, { onSaved: rerender, onRenamed: hooks.onRenamed || rerender });
+    });
+
+    App.u.on(wrap, "click", "[data-gdelete]", function (e, el) {
+      e.stopPropagation();
+      const name = el.dataset.gdelete;
+      const memberCount = store.groupMembers(name).length;
+      ui.confirm({
+        title: 'Delete "' + name + '"?',
+        desc: memberCount ? "Its " + memberCount + " member bank" + (memberCount > 1 ? "s" : "") + " will move back to the ungrouped Exam banks list. This does not delete any banks." : "This group has no member banks.",
+        confirmLabel: "Delete group", danger: true
+      }, function () {
+        store.deleteGroup(name);
+        ui.toast("Group deleted.", "info");
+        if (hooks.onDeleted) hooks.onDeleted(); else rerender();
+      });
+    });
   }
 
   /* load the two bundled .md files (only possible when served over http) */

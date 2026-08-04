@@ -110,6 +110,18 @@ window.App = window.App || {};
     setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 60);
   };
 
+  /* A link's site icon, derived straight from its URL — no HTML fetch/scrape
+     needed (and none would work cross-origin from a static client-side app
+     anyway). Google's favicon service returns the right mark for any domain
+     — YouTube for a youtube.com link, GitHub for github.com, etc. — from an
+     <img> tag, which loads cross-origin fine without CORS. */
+  U.faviconUrl = function (url, size) {
+    try {
+      const host = new URL(url).hostname;
+      return "https://www.google.com/s2/favicons?sz=" + (size || 32) + "&domain=" + encodeURIComponent(host);
+    } catch (e) { return null; }
+  };
+
   U.slugFile = function (name) {
     return String(name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "exam-bank";
   };

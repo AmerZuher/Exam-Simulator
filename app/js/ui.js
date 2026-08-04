@@ -63,6 +63,7 @@ window.App = window.App || {};
     const v = document.getElementById("modal-veil");
     if (v) v.remove();
     document.removeEventListener("keydown", escClose);
+    if (App.components && App.components.closeAllSelects) App.components.closeAllSelects();
   }
   UI.closeModal = closeModal;
 

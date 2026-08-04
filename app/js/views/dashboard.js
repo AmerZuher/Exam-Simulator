@@ -21,7 +21,6 @@ App.views = App.views || {};
       "<h2>Practice. Preview. Master every question.</h2>" +
       "<p>Import markdown question banks, drill them in the interactive simulator, or flip open the instant Q&amp;A study preview \u2014 with attempt history, mastery tracking and smart parsing built in.</p>" +
       '<div class="hero-actions">' +
-      (stats.due ? '<button class="btn btn-light" data-act="review-due">' + App.icon("cards", 16) + "Review " + stats.due + " due</button>" : "") +
       '<button class="btn btn-light" data-act="import">' + App.icon("upload", 16) + "Import question bank</button>" +
       '<button class="btn btn-light" data-act="builder">' + App.icon("layers", 16) + "Custom exam</button>" +
       '<button class="btn btn-ghost" data-act="ai">' + App.icon("robot", 16) + "Generate with AI</button>" +
@@ -295,7 +294,7 @@ App.views = App.views || {};
       pop.querySelector('[data-m="export"]').onclick = function () {
         closeMenus();
         const bank = store.getBank(name);
-        App.u.download(App.u.slugFile(name) + ".json", JSON.stringify({ name: name, exportedAt: new Date().toISOString(), questions: bank.questions }, null, 2));
+        App.u.download(App.u.slugFile(name) + ".json", JSON.stringify({ name: name, group: bank.group || "", exportedAt: new Date().toISOString(), questions: bank.questions }, null, 2));
         ui.toast("Bank exported as JSON.", "ok");
       };
       pop.querySelector('[data-m="delete"]').onclick = function () {

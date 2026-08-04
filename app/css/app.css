@@ -109,6 +109,10 @@ body {
   text-rendering: optimizeLegibility;
   transition: background-color 0.35s ease, color 0.35s ease;
 }
+/* Applied while the mobile off-canvas sidebar is open, so the page behind
+   it can't scroll — with nothing scrolling underneath, the fixed drawer has
+   nothing to visually drift against. */
+body.no-scroll { overflow: hidden; }
 
 body::before {
   content: "";
@@ -153,35 +157,45 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
   transition: --sidebar-w 0.35s var(--ease);
 }
 
-/* ---- collapsed sidebar rail ---- */
-.shell.sb-collapsed { --sidebar-w: 64px; }
+/* ---- collapsed sidebar rail ----
+   A desktop-only concept: the collapsed sidebar is a narrow persistent rail
+   that lives in the shell's grid column. Below 961px the sidebar isn't part
+   of that grid at all — it's an off-canvas drawer (see the max-width:960px
+   block) — so applying this same icon-only styling there doesn't shrink
+   anything, it just squashes the drawer's nav items into a centred column
+   inside its still-full-width box. Scoping to desktop keeps the mobile
+   drawer unaffected no matter how sb-collapsed got set (the toggle click,
+   or a persisted setting from a previous desktop session). */
+@media (min-width: 961px) {
+  .shell.sb-collapsed { --sidebar-w: 64px; }
 
-.shell.sb-collapsed .sidebar { padding: 0 10px 20px; align-items: center; }
-.shell.sb-collapsed #side-nav { overflow: hidden; display: flex; flex-direction: column; gap: 4px; }
-.shell.sb-collapsed .brand { width: 100%; margin: 0 0 8px; padding: 0; justify-content: center; }
-.shell.sb-collapsed .brand > div:last-child { display: none; }
-.shell.sb-collapsed .brand-badge { width: 36px; height: 36px; border-radius: 50%; box-shadow: 0 4px 10px -4px var(--acc); }
+  .shell.sb-collapsed .sidebar { padding: 0 10px 20px; align-items: center; }
+  .shell.sb-collapsed #side-nav { overflow: hidden; display: flex; flex-direction: column; gap: 4px; }
+  .shell.sb-collapsed .brand { width: 100%; margin: 0 0 8px; padding: 0; justify-content: center; }
+  .shell.sb-collapsed .brand > div:last-child { display: none; }
+  .shell.sb-collapsed .brand-badge { width: 36px; height: 36px; border-radius: 50%; box-shadow: 0 4px 10px -4px var(--acc); }
 
-.shell.sb-collapsed .nav-label { display: none; }
-.shell.sb-collapsed .nav-item {
-  justify-content: center;
-  padding: 0;
-  gap: 0;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--r-sm);
+  .shell.sb-collapsed .nav-label { display: none; }
+  .shell.sb-collapsed .nav-item {
+    justify-content: center;
+    padding: 0;
+    gap: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--r-sm);
+  }
+  .shell.sb-collapsed .nav-item:hover { background: var(--acc-softer); }
+  .shell.sb-collapsed .nav-item.active { background: var(--acc-soft); }
+  .shell.sb-collapsed .nav-item span { display: none; }
+  /* the bank badge is itself a <span>, so restore it too or the rail goes blank */
+  .shell.sb-collapsed .nav-item .nav-ico,
+  .shell.sb-collapsed .nav-item .nav-ico .bank-badge { display: grid; }
+  .shell.sb-collapsed .nav-pill { display: none; }
+
+  .shell.sb-collapsed .sidebar-foot { align-items: center; }
+  .shell.sb-collapsed .collapse-btn { justify-content: center; padding: 9px; width: 44px; }
+  .shell.sb-collapsed .collapse-lbl { display: none; }
 }
-.shell.sb-collapsed .nav-item:hover { background: var(--acc-softer); }
-.shell.sb-collapsed .nav-item.active { background: var(--acc-soft); }
-.shell.sb-collapsed .nav-item span { display: none; }
-/* the bank badge is itself a <span>, so restore it too or the rail goes blank */
-.shell.sb-collapsed .nav-item .nav-ico,
-.shell.sb-collapsed .nav-item .nav-ico .bank-badge { display: grid; }
-.shell.sb-collapsed .nav-pill { display: none; }
-
-.shell.sb-collapsed .sidebar-foot { align-items: center; }
-.shell.sb-collapsed .collapse-btn { justify-content: center; padding: 9px; width: 44px; }
-.shell.sb-collapsed .collapse-lbl { display: none; }
 
 /* floating tooltip (JS-positioned on body) */
 .sidebar-float-tip {
@@ -744,7 +758,9 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
 .xsel-panel {
   display: none;
   position: fixed;
-  z-index: 70;
+  z-index: 95;
+  width: max-content;
+  max-width: min(380px, calc(100vw - 20px));
   max-height: 264px;
   overflow-y: auto;
   background: var(--surface);
@@ -761,6 +777,9 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
   font-weight: 600;
   color: var(--ink-soft);
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   transition: background 0.14s ease, color 0.14s ease;
 }
 .xsel-opt:hover, .xsel-opt:focus-visible { background: var(--surface-2); color: var(--ink); outline: none; }
@@ -1398,10 +1417,30 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
 }
 @media (max-width: 960px) {
   .shell { grid-template-columns: 1fr; }
-  .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 272px; transform: translateX(-102%); box-shadow: var(--sh-pop); }
+  /* height (not top:0;bottom:0) so mobile browsers don't reflow this box
+     every time the address bar shows/hides mid-scroll — dvh tracks the
+     *current* visual viewport instead of recomputing from two edges, which
+     is what made the drawer appear to drift while the page scrolled behind
+     it. overscroll-behavior stops a scroll gesture that reaches the end of
+     the nav list from chaining into the body underneath. */
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    height: 100dvh;
+    width: 272px;
+    transform: translateX(-102%);
+    box-shadow: var(--sh-pop);
+    overscroll-behavior: contain;
+  }
   .sidebar.open { transform: none; }
   .scrim.show { display: block; opacity: 1; }
   .hamburger { display: inline-grid; }
+  /* the collapsed rail is a desktop concept — the mobile sidebar is already
+     a full off-canvas drawer, there's no narrower mode for it to collapse
+     into (see the sb-collapsed media block above) */
+  .sidebar-foot { display: none; }
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
   .content { padding: 20px 16px 60px; }
   .topbar { padding: 11px 16px; gap: 10px; }
@@ -2110,15 +2149,18 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
 .chart-tip .ct-val { font-weight: 800; font-variant-numeric: tabular-nums; }
 .chart-tip .ct-lbl { opacity: 0.66; font-weight: 500; }
 
-/* ---------- Progress view ---------- */
+/* ---------- Progress view ----------
+   Only the scope dropdown is elastic. The due button stays sized to its own
+   content at every width — it never shrinks or gets clipped — with a 6%
+   gap between it and the dropdown, which absorbs whatever width is left. */
 .prog-filter {
   display: flex;
   align-items: center;
-  gap: 11px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  gap: 6%;
 }
-.pf-lbl { font-size: 11.5px; font-weight: 700; color: var(--muted); }
-.pf-spacer { flex: 1; min-width: 0; }
+.prog-filter > .xsel { flex: 1 1 auto; min-width: 0; }
+.prog-filter > [data-act="review"] { flex: 0 0 auto; }
 .prog-row {
   display: grid;
   grid-template-columns: 1.45fr 1fr;
@@ -2234,40 +2276,16 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
 }
 .help-sub:first-of-type { margin-top: 10px; }
 
-/* ---------- Segmented control (importer format switch) ---------- */
-.import-content-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 7px;
+/* ---------- Importer content field (floating format badge) ---------- */
+.import-content-wrap { position: relative; }
+.import-fmt-badge {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  pointer-events: none;   /* purely informational — clicks pass through to the textarea beneath */
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
 }
-.import-content-head .linklike { margin-left: auto; }
-
-.seg {
-  display: inline-flex;
-  padding: 3px;
-  gap: 3px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--line);
-  background: var(--surface-2);
-}
-.seg-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 11px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--muted);
-  font-size: 11.5px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: color 0.15s ease, background 0.15s ease;
-}
-.seg-btn:hover { color: var(--ink); }
-.seg-btn.on { background: var(--surface); color: var(--acc); box-shadow: var(--sh-1); }
 
 .field-hint code {
   font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;

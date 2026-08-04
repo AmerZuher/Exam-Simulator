@@ -120,11 +120,11 @@ settings: { theme: "light", accent: "indigo", sidebarCollapsed: false, dailyGoal
       return true;
     },
 
-    addBank: function (name, questions) {
+    addBank: function (name, questions, group) {
       let final = name;
       let i = 2;
       while (this.state.banks[final]) { final = name + " (" + i + ")"; i++; }
-      this.state.banks[final] = { name: final, createdAt: Date.now(), questions: questions };
+      this.state.banks[final] = { name: final, createdAt: Date.now(), group: group || "", questions: questions };
       this.saveBanks();
       return final;
     },

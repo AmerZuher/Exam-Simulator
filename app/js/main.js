@@ -178,6 +178,7 @@ window.App = window.App || {};
     const sc = document.getElementById("scrim");
     if (sb) sb.classList.remove("open");
     if (sc) sc.classList.remove("show");
+    document.body.classList.remove("no-scroll");
   };
 
   /* ---------------- first run ---------------- */
@@ -283,11 +284,14 @@ window.App = window.App || {};
       if (!t) { if (tipEl) { tipEl.remove(); tipEl = null; } }
     });
 
-    /* hamburger / scrim (mobile) */
+    /* hamburger / scrim (mobile) — body scroll is locked while the drawer is
+       open so there's nothing scrolling behind the fixed sidebar for it to
+       visually drift against. */
     const ham = document.getElementById("hamburger");
     if (ham) ham.onclick = function () {
       document.getElementById("sidebar").classList.add("open");
       document.getElementById("scrim").classList.add("show");
+      document.body.classList.add("no-scroll");
     };
     const scrim = document.getElementById("scrim");
     if (scrim) scrim.onclick = Main.closeSidebar;
@@ -308,30 +312,10 @@ window.App = window.App || {};
       if (!f || !/\.(md|txt|json)$/i.test(f.name)) return;
 
       /* both formats land in the importer so the diagnostics and the
-         new-vs-append choice always apply */
-      const isJson = /\.json$/i.test(f.name);
-      const reader = new FileReader();
-      reader.onload = function () {
-        App.router.go("#/import");
-        setTimeout(function () {
-          const fmtBtn = document.querySelector('#import-format [data-fmt="' + (isJson ? "json" : "md") + '"]');
-          if (fmtBtn) fmtBtn.click();
-          const title = document.getElementById("import-title");
-          const content = document.getElementById("import-content");
-          if (!title || !content) return;
-          let name = f.name.replace(/\.[^.]+$/, "");
-          if (isJson) {
-            try {
-              const probe = JSON.parse(reader.result);
-              if (probe && !Array.isArray(probe) && probe.name) name = String(probe.name);
-            } catch (ex) { /* the importer's diagnostics will explain */ }
-          }
-          title.value = name;
-          content.value = reader.result;
-          content.dispatchEvent(new Event("input"));
-        }, 60);
-      };
-      reader.readAsText(f);
+         new-vs-append choice always apply — reuse its own file-loading path
+         (title/format detection included) rather than duplicating it here. */
+      App.router.go("#/import");
+      setTimeout(function () { App.views.importer.loadDroppedFile(f); }, 60);
     });
 
     /* "/" focuses the study search box */

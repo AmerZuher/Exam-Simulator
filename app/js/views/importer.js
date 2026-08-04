@@ -9,20 +9,21 @@ App.views = App.views || {};
   let blockingErrors = 0;   // count of severity:"error" diagnostics for the current content — gates the Save button
   let pendingLook = null;   // { icon, tone, logo } chosen before the bank exists — applied right after it's created
   let multiQueue = null;    // [{ fileName, bankName, format, text }] — dropping several files queues one bank per file
+  let lastAutoTitle = "";   // last title we auto-filled, so a manual edit isn't clobbered on the next keystroke
 
   const MD_PLACEHOLDER =
-    "### 1. Your first question&#10;- [ ] Option A&#10;- [ ] Option B&#10;...&#10;" +
+    "# My bank&#10;&#10;### 1. Your first question&#10;- [ ] Option A&#10;- [ ] Option B&#10;...&#10;" +
     "### Answer Key&#10;| Question Number | Correct Answer |&#10;| 1 | Option B |";
 
   const JSON_PLACEHOLDER =
-    "{&#10;  &quot;name&quot;: &quot;My bank&quot;,&#10;  &quot;questions&quot;: [&#10;    {&#10;" +
+    "{&#10;  &quot;name&quot;: &quot;My bank&quot;,&#10;  &quot;group&quot;: &quot;Exam 250-609&quot;,&#10;  &quot;questions&quot;: [&#10;    {&#10;" +
     "      &quot;question&quot;: &quot;Capital of France?&quot;,&#10;      &quot;type&quot;: &quot;single&quot;,&#10;" +
     "      &quot;options&quot;: [&quot;London&quot;, &quot;Paris&quot;],&#10;      &quot;correctIndices&quot;: [1]&#10;" +
     "    }&#10;  ]&#10;}";
 
   const HINTS = {
-    md: "Question headings look like <code>### 1. Your question</code>, options like <code>- [ ] Choice</code>, and an answer key table at the end.",
-    json: "Either a bare array of questions or <code>{ \"name\", \"questions\": [...] }</code> — the shape produced by <b>Export as JSON</b>."
+    md: "Question headings look like <code>### 1. Your question</code>, options like <code>- [ ] Choice</code>, and an answer key table at the end. A leading <code># Title</code> line sets the bank name.",
+    json: "Either a bare array of questions or <code>{ \"name\", \"group\", \"questions\": [...] }</code> — the shape produced by <b>Export as JSON</b>. <code>name</code> sets the bank name."
   };
 
   /* ---------------- JSON bank parsing ---------------- */
@@ -132,6 +133,7 @@ App.views = App.views || {};
     questions.forEach(function (q, i) { q.id = i + 1; });
     return {
       name: (!Array.isArray(data) && data.name) ? String(data.name) : "",
+      group: (!Array.isArray(data) && data.group) ? String(data.group) : "",
       questions: questions,
       warnings: warnings
     };
@@ -139,10 +141,19 @@ App.views = App.views || {};
 
   View.parseJsonBank = parseJsonBank;
 
+  /* Entry point for a file dropped anywhere outside the importer's own
+     dropzone (see main.js) — loads it into the editor exactly like dropping
+     it on the dropzone would, once the router has mounted this view. */
+  View.loadDroppedFile = function (f) {
+    const root = document.getElementById("view");
+    if (root) readFile(f, root);
+  };
+
   View.render = function (root) {
     const names = App.store.bankNames();
     pendingLook = null;   // fresh visit — start from the default look each time
     multiQueue = null;
+    lastAutoTitle = "";
 
     root.innerHTML =
       '<div class="view" style="max-width:860px;margin:0 auto">' +
@@ -176,14 +187,11 @@ App.views = App.views || {};
       "</select></div>" +
       "</div>" +
 
-      "<div><div class='import-content-head'>" +
-      "<label class='field-lbl' style='margin:0'>Paste content</label>" +
-      '<div class="seg" id="import-format" role="tablist">' +
-      '<button class="seg-btn on" data-fmt="md" role="tab">' + App.icon("book", 13) + "Markdown</button>" +
-      '<button class="seg-btn" data-fmt="json" role="tab">' + App.icon("code", 13) + "JSON</button>" +
-      "</div>" +
-      "<button class='linklike' id='ai-copy' style='display:inline-flex;align-items:center;gap:6px;color:var(--acc)'>" + App.icon("robot", 14) + "Copy AI prompt</button></div>" +
+      "<div><label class='field-lbl'>Content</label>" +
+      '<div class="import-content-wrap">' +
       '<textarea class="textarea" id="import-content" rows="11" placeholder="' + MD_PLACEHOLDER + '"></textarea>' +
+      '<span class="chip chip-acc import-fmt-badge" id="import-fmt-badge">' + App.icon("book", 11, 2.2) + "Markdown</span>" +
+      "</div>" +
       "<div class='field-hint' id='import-fmt-hint'>Question headings look like <code>### 1. Your question</code>, options like <code>- [ ] Choice</code>, and an answer key table at the end.</div></div>" +
 
       '<div id="import-diag" style="display:none"></div>' +
@@ -251,11 +259,6 @@ App.views = App.views || {};
 
     content.addEventListener("input", u.debounce(function () { updateDiag(root); }, 220));
 
-    root.querySelectorAll("#import-format .seg-btn").forEach(function (b) {
-      b.onclick = function () { setFormat(root, b.dataset.fmt); };
-    });
-
-    root.querySelector("#ai-copy").onclick = View.copyAIPrompt;
     root.querySelector("#import-cancel").onclick = function () { App.router.go("#/dashboard"); };
     root.querySelector("#import-go").onclick = function () { doImport(root); };
   }
@@ -275,19 +278,40 @@ App.views = App.views || {};
     format = fmt === "json" ? "json" : "md";
     const ta = root.querySelector("#import-content");
     const hint = root.querySelector("#import-fmt-hint");
-    const ai = root.querySelector("#ai-copy");
-    if (!ta || !hint || !ai) return;   // view replaced while a debounce was pending
+    const badge = root.querySelector("#import-fmt-badge");
+    if (!ta || !hint || !badge) return;   // view replaced while a debounce was pending
 
-    root.querySelectorAll("#import-format .seg-btn").forEach(function (b) {
-      b.classList.toggle("on", b.dataset.fmt === format);
-    });
+    badge.className = "chip " + (format === "json" ? "chip-teal" : "chip-acc");
+    badge.innerHTML = App.icon(format === "json" ? "code" : "book", 11, 2.2) + (format === "json" ? "JSON" : "Markdown");
     ta.setAttribute("placeholder", format === "json"
       ? JSON_PLACEHOLDER.replace(/&#10;/g, "\n").replace(/&quot;/g, '"')
       : MD_PLACEHOLDER.replace(/&#10;/g, "\n"));
     ta.classList.toggle("mono", format === "json");
     hint.innerHTML = HINTS[format];
-    ai.style.display = format === "json" ? "none" : "";
     updateDiag(root);
+  }
+
+  /* A leading "# Title" line (H1) sets the bank name directly — mirrors how
+     an exported/hand-written JSON bank's "name" field does the same. Only
+     the very first line counts, so an H1 appearing later in the body (e.g.
+     inside a question) can't hijack the title. */
+  function extractMdTitle(text) {
+    const firstLine = (text || "").trim().split(/\r?\n/, 1)[0] || "";
+    const m = /^#\s+(.+)$/.exec(firstLine.trim());
+    return m ? m[1].trim() : "";
+  }
+
+  /* Auto-fills the bank name from the source (md "# Title" / json "name")
+     without stomping a name the user typed themselves: it only overwrites
+     the field when it's still empty or still holds our own last auto-fill. */
+  function applyAutoTitle(root, extracted) {
+    if (!extracted) return;
+    const input = root.querySelector("#import-title");
+    if (!input) return;
+    if (!input.value.trim() || input.value === lastAutoTitle) {
+      input.value = extracted;
+      lastAutoTitle = extracted;
+    }
   }
 
   /* Loads a file into the editor (both formats) rather than importing blind, so
@@ -303,8 +327,12 @@ App.views = App.views || {};
           const probe = JSON.parse(reader.result);
           if (probe && !Array.isArray(probe) && probe.name) title = String(probe.name);
         } catch (e) { /* diagnostics will report it */ }
+      } else {
+        const mdTitle = extractMdTitle(reader.result);
+        if (mdTitle) title = mdTitle;
       }
       root.querySelector("#import-title").value = title;
+      lastAutoTitle = title;
       root.querySelector("#import-content").value = reader.result;
       updateDiag(root);
       App.ui.toast("File loaded — review the diagnostics below.", "info");
@@ -333,13 +361,18 @@ App.views = App.views || {};
       multiQueue = files.map(function (f, i) {
         const isJson = /\.json$/i.test(f.name);
         let bankName = f.name.replace(/\.[^.]+$/, "");
+        let group = "";
         if (isJson) {
           try {
             const data = JSON.parse(texts[i]);
             if (data && !Array.isArray(data) && data.name) bankName = String(data.name);
+            if (data && !Array.isArray(data) && data.group) group = String(data.group);
           } catch (e) { /* this file's own diagnostics will surface the parse error */ }
+        } else {
+          const mdTitle = extractMdTitle(texts[i]);
+          if (mdTitle) bankName = mdTitle;
         }
-        return { fileName: f.name, bankName: bankName, format: isJson ? "json" : "md", text: texts[i] };
+        return { fileName: f.name, bankName: bankName, group: group, format: isJson ? "json" : "md", text: texts[i] };
       });
       renderMultiQueue(root);
       App.ui.toast(files.length + " files loaded — review each before importing.", "info");
@@ -516,12 +549,13 @@ App.views = App.views || {};
     multiQueue.forEach(function (entry) {
       const name = (entry.bankName || "").trim() || entry.fileName.replace(/\.[^.]+$/, "");
       try {
-        let questions;
+        let questions, group = entry.group || "";
         if (entry.format === "json") {
           const res = parseJsonBank(entry.text);
           const errs = res.warnings.filter(function (w) { return w.severity === "error"; });
           if (errs.length) { problems.push(name + ": " + errs.length + " error(s) — skipped."); return; }
           questions = res.questions;
+          group = res.group || group;
         } else {
           const res = App.parser.parse(entry.text);
           if (!res.questions.length) { problems.push(name + ": no questions found — skipped."); return; }
@@ -529,7 +563,7 @@ App.views = App.views || {};
           if (errs.length) { problems.push(name + ": " + errs.length + " error(s) — skipped."); return; }
           questions = res.questions;
         }
-        App.store.addBank(name, questions);
+        App.store.addBank(name, questions, group);
         created++;
       } catch (e) {
         problems.push(name + ": " + e.message + " — skipped.");
@@ -577,6 +611,7 @@ App.views = App.views || {};
     if (format === "json") {
       try {
         const res = parseJsonBank(text);
+        applyAutoTitle(root, res.name);
         const types = { single: 0, multiple: 0, matching: 0 };
         res.questions.forEach(function (q) { types[q.type]++; });
         const errors = res.warnings.filter(function (w) { return w.severity === "error"; });
@@ -595,6 +630,7 @@ App.views = App.views || {};
         return;
       }
     } else {
+      applyAutoTitle(root, extractMdTitle(text));
       p = App.parser.preview(text);
     }
     if (!p) { box.style.display = "none"; setSaveGate(root, 0); return; }
@@ -677,7 +713,7 @@ App.views = App.views || {};
     if (mode === "new" && !finalTitle) { App.ui.toast("Give the new bank a name.", "err"); return; }
 
     if (mode === "new") {
-      const final = App.store.addBank(finalTitle, res.questions);
+      const final = App.store.addBank(finalTitle, res.questions, format === "json" ? res.group : "");
       if (pendingLook) App.store.setBankLook(final, pendingLook.icon, pendingLook.tone, pendingLook.logo);
       App.ui.toast("Bank “" + final + "” created with " + res.questions.length + " questions.", "ok");
     } else {

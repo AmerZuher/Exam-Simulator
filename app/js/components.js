@@ -70,6 +70,7 @@ window.App = window.App || {};
       window.removeEventListener("scroll", closePanel, true);
       window.removeEventListener("resize", closePanel);
     }
+    panel._xselClose = closePanel;
 
     function focusStep(fromIndex, dir) {
       const rows = panel.children;
@@ -127,14 +128,21 @@ window.App = window.App || {};
 
     /* Fixed positioning (viewport-relative, like getBoundingClientRect
        itself) so the panel lines up with the trigger no matter what
-       ancestors are scrolled or transformed — see the portal note above. */
+       ancestors are scrolled or transformed — see the portal note above.
+       Width is never pinned to the trigger's own width: a narrow trigger
+       (e.g. the Progress page's bank-scope select) next to a long option
+       label used to force multi-line wrapping inside the row. Instead the
+       panel grows to fit its longest row (min the trigger's width, so it
+       never looks narrower than what it's opening from) up to the CSS
+       max-width, where `.xsel-opt`'s ellipsis takes over. */
     function positionPanel() {
       const rect = trigger.getBoundingClientRect();
+      panel.style.minWidth = rect.width + "px";
       const roomBelow = window.innerHeight - rect.bottom;
       const flip = roomBelow < 220 && rect.top > roomBelow;
       panel.classList.toggle("flip", flip);
-      panel.style.left = rect.left + "px";
-      panel.style.width = rect.width + "px";
+      const maxLeft = window.innerWidth - panel.offsetWidth - 10;
+      panel.style.left = Math.max(10, Math.min(rect.left, maxLeft)) + "px";
       if (flip) {
         panel.style.top = "";
         panel.style.bottom = (window.innerHeight - rect.top + 6) + "px";
@@ -204,6 +212,19 @@ window.App = window.App || {};
   Components.enhanceSelects = function (root) {
     sweepOrphanPanels();
     (root || document).querySelectorAll("select.select").forEach(Components.enhanceSelect);
+  };
+
+  /* Closes every currently-open dropdown panel. A panel lives on <body>
+     independent of its <select>'s own subtree (see the portal note above),
+     so tearing down a modal that contains an open select — e.g. clicking
+     Cancel while a dropdown is open — would otherwise strand it mid-air:
+     still "open", still holding document/window listeners, sitting on top
+     of whatever renders next. Call this before removing anything that might
+     contain an open select. */
+  Components.closeAllSelects = function () {
+    document.querySelectorAll(".xsel-panel.open").forEach(function (p) {
+      if (p._xselClose) p._xselClose();
+    });
   };
 
   App.components = Components;

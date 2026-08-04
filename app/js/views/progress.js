@@ -42,13 +42,11 @@ App.views = App.views || {};
 
       /* ---- filter row: one row, above everything it scopes ---- */
       '<div class="prog-filter rise">' +
-      '<span class="pf-lbl">Showing</span>' +
-      '<select class="select" id="prog-scope" style="max-width:280px">' +
+      '<select class="select" id="prog-scope">' +
       '<option value="all"' + (scope === "all" ? " selected" : "") + ">All banks</option>" +
       names.map(function (n) {
         return '<option value="' + u.esc(n) + '"' + (scope === n ? " selected" : "") + ">" + u.esc(n) + "</option>";
       }).join("") + "</select>" +
-      '<div class="pf-spacer"></div>' +
       (g.due ? '<button class="btn btn-primary btn-sm" data-act="review">' + App.icon("cards", 14) + g.due + " due — review now</button>" : "") +
       "</div>" +
 

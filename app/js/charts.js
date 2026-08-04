@@ -229,14 +229,27 @@ window.App = window.App || {};
         g.addEventListener("pointerleave", function () { g.classList.remove("hot"); hideTip(); });
         svg.appendChild(g);
 
+        /* Centering every label on its bar (text-anchor:middle) draws half
+           the text past whichever edge that bar sits nearest — with 14
+           slots in a narrow card, a 2-char label like "16" on a near-last
+           bar spills past the SVG's own width (chart-svg is deliberately
+           overflow:visible for hover/dot effects elsewhere, so nothing
+           clips it) and pokes outside the card. Re-anchor inward — same
+           trick as the line chart's first/last x labels — for any label
+           whose centre falls within a text-width's reach of either edge. */
+        const edgeMargin = 16;
+        const cx = x + bw / 2;
+        const anchor = cx < edgeMargin ? "start" : cx > W - edgeMargin ? "end" : "middle";
+        const ax = anchor === "start" ? i * slot : anchor === "end" ? (i + 1) * slot : cx;
+
         /* direct-label only the peak — never a number on every bar */
         if (b.value === max && max > 0) {
-          const t = el("text", { x: x + bw / 2, y: y - 6, class: "chart-value", "text-anchor": "middle" });
+          const t = el("text", { x: ax, y: y - 6, class: "chart-value", "text-anchor": anchor });
           t.textContent = b.value;
           svg.appendChild(t);
         }
         if (b.label && (n <= 8 || i % 2 === 0)) {
-          const t = el("text", { x: x + bw / 2, y: H - 8, class: "chart-axis", "text-anchor": "middle" });
+          const t = el("text", { x: ax, y: H - 8, class: "chart-axis", "text-anchor": anchor });
           t.textContent = b.label;
           svg.appendChild(t);
         }

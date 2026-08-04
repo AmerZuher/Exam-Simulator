@@ -67,8 +67,8 @@ window.App = window.App || {};
       { group: "Action", icon: "sparkle", title: "Keyboard shortcuts", hint: "?", run: function () { App.main.showHelp(); } },
       {
         group: "Action",
-        icon: store.state.settings.theme === "dark" ? "sun" : "moon",
-        title: "Switch to " + (store.state.settings.theme === "dark" ? "light" : "dark") + " mode",
+        icon: App.main.LIGHT_THEMES.indexOf(store.state.settings.theme) !== -1 ? "moon" : "sun",
+        title: "Switch to " + (App.main.LIGHT_THEMES.indexOf(store.state.settings.theme) !== -1 ? "dark" : "light") + " mode",
         run: function () { App.main.toggleTheme(); }
       }
     );

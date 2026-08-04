@@ -43,7 +43,7 @@ window.App = window.App || {};
       banks: {},      // name -> { name, createdAt, questions: [] }
       history: {},    // name -> [{ ts, pct, correct, total, seconds, passed }]
       mastered: {},   // name -> { qid: true }
-settings: { theme: "light", accent: "indigo", sidebarCollapsed: false, dailyGoal: 20 },
+settings: { theme: "light", accent: "indigo", sidebarCollapsed: false, dailyGoal: 20, sidebarLinks: [] },
     session: null,   // in-progress exam snapshot
     practiceSession: null,   // in-progress Practice Mode snapshot — its own slot, never mixed with `session`
     dueDates: {},    // legacy v1 schedule — migrated into `srs` on load
@@ -385,7 +385,35 @@ settings: { theme: "light", accent: "indigo", sidebarCollapsed: false, dailyGoal
     },
 
     /* ---- settings ---- */
-    setSetting: function (k, v) { this.state.settings[k] = v; this.saveSettings(); }
+    setSetting: function (k, v) { this.state.settings[k] = v; this.saveSettings(); },
+
+    /* ---- sidebar personalization ----
+       Each entry is one of:
+         { id, type:"group", groupName }
+         { id, type:"bank",  bankKey, mode: "exam"|"study"|"practice" }
+         { id, type:"link",  label, url }
+       Order in the array is display order — reordering just swaps entries. */
+    getSidebarLinks: function () { return this.state.settings.sidebarLinks || []; },
+    addSidebarLink: function (entry) {
+      if (!this.state.settings.sidebarLinks) this.state.settings.sidebarLinks = [];
+      entry = Object.assign({}, entry, { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6) });
+      this.state.settings.sidebarLinks.push(entry);
+      this.saveSettings();
+      return entry;
+    },
+    removeSidebarLink: function (id) {
+      this.state.settings.sidebarLinks = this.getSidebarLinks().filter(function (l) { return l.id !== id; });
+      this.saveSettings();
+    },
+    moveSidebarLink: function (id, dir) {
+      const list = this.getSidebarLinks();
+      const i = list.findIndex(function (l) { return l.id === id; });
+      if (i === -1) return;
+      const j = i + dir;
+      if (j < 0 || j >= list.length) return;
+      const tmp = list[i]; list[i] = list[j]; list[j] = tmp;
+      this.saveSettings();
+    }
   };
 
   App.store = Store;

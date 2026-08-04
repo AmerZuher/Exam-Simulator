@@ -94,6 +94,155 @@ body[data-theme="dark"] {
   --sh-pop: 0 30px 80px -12px rgba(0, 0, 0, 0.7);
 }
 
+/* True black — OLED panels turn pixels fully off at #000, saving power and
+   giving the deepest possible contrast. Neutrals lean pure grey (no blue
+   tint) so they stay legible against true black without ever looking hazy. */
+body[data-theme="oled"] {
+  --bg: #000000;
+  --bg-grad: radial-gradient(1200px 800px at 85% -10%, rgba(99, 102, 241, 0.10), transparent 60%),
+             radial-gradient(900px 650px at -10% 115%, rgba(13, 154, 168, 0.07), transparent 55%),
+             radial-gradient(700px 500px at 50% 70%, rgba(168, 85, 247, 0.04), transparent 60%);
+  --surface: #070707;
+  --surface-2: #0e0e0e;
+  --surface-3: #181818;
+  --ink: #f5f6fa;
+  --ink-soft: #cacdd9;
+  --muted: #8d90a0;
+  --faint: #5c5f6e;
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.18);
+
+  --acc-soft: rgba(99, 102, 241, 0.20);
+  --acc-softer: rgba(99, 102, 241, 0.11);
+  --acc-line: rgba(129, 133, 245, 0.5);
+  --acc-glow: 0 8px 26px -8px rgba(99, 102, 241, 0.65);
+
+  --ok: #33d696;
+  --ok-soft: rgba(51, 214, 150, 0.14);
+  --ok-line: rgba(51, 214, 150, 0.4);
+  --bad: #ff7a90;
+  --bad-soft: rgba(255, 122, 144, 0.14);
+  --bad-line: rgba(255, 122, 144, 0.4);
+  --warn: #ffc23c;
+  --warn-soft: rgba(255, 194, 60, 0.14);
+  --warn-line: rgba(255, 194, 60, 0.42);
+  --teal: #35d6e6;
+  --teal-soft: rgba(53, 214, 230, 0.15);
+  --teal-line: rgba(53, 214, 230, 0.4);
+
+  --sh-1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 22px -12px rgba(0, 0, 0, 0.7);
+  --sh-2: 0 2px 6px rgba(0, 0, 0, 0.55), 0 22px 44px -18px rgba(0, 0, 0, 0.8);
+  --sh-pop: 0 30px 80px -12px rgba(0, 0, 0, 0.9);
+}
+
+/* Tokyo Night — the familiar editor palette: deep indigo-grey surfaces,
+   lavender ink, and its own signature green/red/orange/cyan semantic set
+   (rather than reusing dark theme's colors, which skew a plainer teal/amber). */
+body[data-theme="tokyo-night"] {
+  --bg: #1a1b26;
+  --bg-grad: radial-gradient(1200px 800px at 85% -10%, rgba(122, 162, 247, 0.14), transparent 60%),
+             radial-gradient(900px 650px at -10% 115%, rgba(125, 207, 255, 0.08), transparent 55%),
+             radial-gradient(700px 500px at 50% 70%, rgba(187, 154, 247, 0.06), transparent 60%);
+  --surface: #1f2335;
+  --surface-2: #242840;
+  --surface-3: #2b304c;
+  --ink: #c0caf5;
+  --ink-soft: #a9b1d6;
+  --muted: #7982a9;
+  --faint: #565f89;
+  --line: rgba(169, 177, 214, 0.14);
+  --line-strong: rgba(169, 177, 214, 0.24);
+
+  --acc-soft: rgba(122, 162, 247, 0.18);
+  --acc-softer: rgba(122, 162, 247, 0.10);
+  --acc-line: rgba(122, 162, 247, 0.42);
+  --acc-glow: 0 8px 26px -8px rgba(122, 162, 247, 0.55);
+
+  --ok: #9ece6a;
+  --ok-soft: rgba(158, 206, 106, 0.14);
+  --ok-line: rgba(158, 206, 106, 0.38);
+  --bad: #f7768e;
+  --bad-soft: rgba(247, 118, 142, 0.14);
+  --bad-line: rgba(247, 118, 142, 0.38);
+  --warn: #e0af68;
+  --warn-soft: rgba(224, 175, 104, 0.14);
+  --warn-line: rgba(224, 175, 104, 0.40);
+  --teal: #7dcfff;
+  --teal-soft: rgba(125, 207, 255, 0.14);
+  --teal-line: rgba(125, 207, 255, 0.38);
+
+  --sh-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 22px -12px rgba(0, 0, 0, 0.5);
+  --sh-2: 0 2px 6px rgba(0, 0, 0, 0.35), 0 22px 44px -18px rgba(0, 0, 0, 0.6);
+  --sh-pop: 0 30px 80px -12px rgba(0, 0, 0, 0.7);
+}
+
+/* Nord — the well-known arctic blue-grey editor palette: cool, muted,
+   desaturated neutrals with the Frost/Aurora accents standing in for our
+   semantic colors instead of dark theme's plainer teal/amber. */
+body[data-theme="nord"] {
+  --bg: #2e3440;
+  --bg-grad: radial-gradient(1200px 800px at 85% -10%, rgba(136, 192, 208, 0.12), transparent 60%),
+             radial-gradient(900px 650px at -10% 115%, rgba(94, 129, 172, 0.10), transparent 55%),
+             radial-gradient(700px 500px at 50% 70%, rgba(180, 142, 173, 0.05), transparent 60%);
+  --surface: #3b4252;
+  --surface-2: #434c5e;
+  --surface-3: #4c566a;
+  --ink: #eceff4;
+  --ink-soft: #d8dee9;
+  --muted: #9aa5b8;
+  --faint: #667089;
+  --line: rgba(216, 222, 233, 0.12);
+  --line-strong: rgba(216, 222, 233, 0.22);
+
+  --acc-soft: rgba(99, 102, 241, 0.18);
+  --acc-softer: rgba(99, 102, 241, 0.10);
+  --acc-line: rgba(129, 133, 245, 0.45);
+  --acc-glow: 0 8px 26px -8px rgba(99, 102, 241, 0.6);
+
+  --ok: #a3be8c;
+  --ok-soft: rgba(163, 190, 140, 0.14);
+  --ok-line: rgba(163, 190, 140, 0.38);
+  --bad: #bf616a;
+  --bad-soft: rgba(191, 97, 106, 0.14);
+  --bad-line: rgba(191, 97, 106, 0.38);
+  --warn: #ebcb8b;
+  --warn-soft: rgba(235, 203, 139, 0.14);
+  --warn-line: rgba(235, 203, 139, 0.40);
+  --teal: #88c0d0;
+  --teal-soft: rgba(136, 192, 208, 0.14);
+  --teal-line: rgba(136, 192, 208, 0.38);
+
+  --sh-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 22px -12px rgba(0, 0, 0, 0.5);
+  --sh-2: 0 2px 6px rgba(0, 0, 0, 0.35), 0 22px 44px -18px rgba(0, 0, 0, 0.6);
+  --sh-pop: 0 30px 80px -12px rgba(0, 0, 0, 0.7);
+}
+
+/* Sepia — a warm, paper-like light theme (cream surfaces, ink-brown text)
+   for long reading/study sessions — the light-side counterpart to Nord's
+   cool dark palette. Semantic colors (ok/bad/warn/teal) and accent-soft
+   tuning are already tuned for light backgrounds in :root, so this only
+   overrides the neutrals and shadow warmth, same as Light needs no block
+   of its own. */
+body[data-theme="sepia"] {
+  --bg: #f2e8d5;
+  --bg-grad: radial-gradient(1200px 800px at 80% -10%, rgba(217, 119, 6, 0.07), transparent 60%),
+             radial-gradient(900px 600px at -10% 110%, rgba(180, 83, 9, 0.05), transparent 55%),
+             radial-gradient(600px 500px at 50% 80%, rgba(120, 53, 15, 0.03), transparent 60%);
+  --surface: #fbf3e3;
+  --surface-2: #f3e6cc;
+  --surface-3: #ecd9b8;
+  --ink: #3b2f1e;
+  --ink-soft: #5a4a34;
+  --muted: #8a765a;
+  --faint: #ab9878;
+  --line: rgba(59, 47, 30, 0.10);
+  --line-strong: rgba(59, 47, 30, 0.18);
+
+  --sh-1: 0 1px 2px rgba(59, 47, 30, 0.05), 0 6px 18px -10px rgba(59, 47, 30, 0.14);
+  --sh-2: 0 2px 4px rgba(59, 47, 30, 0.05), 0 18px 38px -16px rgba(59, 47, 30, 0.22);
+  --sh-pop: 0 24px 70px -12px rgba(59, 47, 30, 0.35);
+}
+
 /* ---------- Base ---------- */
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -2496,7 +2645,7 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
 /* The sidebar rail resets icon badges to borderless auto-sized glyphs (no
    box at all) — a photo can't do that, it needs real pixels to size
    against, so give it the same footprint the rail's icons occupy. */
-.nav-ico .bank-badge.has-img { width: 18px; height: 18px; border-radius: 6px; overflow: hidden; background: var(--surface-3); border: 1px solid var(--line); }
+.nav-ico .bank-badge.has-img { width: 22px; height: 22px; border-radius: 6px; overflow: hidden; background: var(--surface-3); border: 1px solid var(--line); }
 
 /* clickable badges (study header, dashboard card) */
 .bank-badge.editable { cursor: pointer; position: relative; transition: transform 0.18s var(--ease), filter 0.18s ease; }
@@ -2588,73 +2737,60 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
 .set-head p { font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 3px; line-height: 1.5; }
 @media (max-width: 620px) { .set-grid { grid-template-columns: 1fr !important; } }
 
-.brand-preview {
+/* ---------- User profile header (Settings → User Profile) ---------- */
+.profile-head {
   display: flex;
   align-items: center;
-  gap: 15px;
-  flex-wrap: wrap;
-  padding: 16px;
+  gap: 20px;
+  padding: 18px 20px;
+  border-radius: var(--r-lg);
+  background: linear-gradient(135deg, var(--acc-softer), transparent 70%), var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  background: var(--surface-2);
+}
+/* A soft accent ring around the photo — a bit of framing so the avatar reads
+   as the hero of the card instead of just another rounded square. */
+.avatar-ring {
+  display: grid;
+  place-items: center;
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: var(--acc-grad);
+  flex-shrink: 0;
+  box-shadow: var(--acc-glow);
 }
 .bp-badge {
   display: grid; place-items: center;
-  width: 52px; height: 52px;
+  width: 76px; height: 76px;
   border-radius: 50%;
   background: var(--acc-grad);
   color: #fff;
   flex-shrink: 0;
-  box-shadow: var(--acc-glow);
   overflow: hidden;
+  border: 2px solid var(--surface-2);
 }
-.bp-badge.has-img { background: var(--surface-3); box-shadow: none; border: 1px solid var(--line); }
+.bp-badge.has-img { background: var(--surface-3); }
 .bp-badge img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; box-sizing: border-box; }
-.bp-name { font-size: 15px; font-weight: 800; letter-spacing: -0.02em; word-break: break-word; }
-.bp-sub { font-size: 11.5px; color: var(--muted); font-weight: 600; margin-top: 2px; }
-
-/* little mock of the browser tab */
-.bp-tab {
-  margin-left: auto;
-  display: flex;
+/* click-to-change — just a hover lift, no overlay icon (there's already an
+   explicit "Change picture" button beside it, and a dot badge here broke the
+   ring's symmetry more than it helped). */
+.bp-badge.editable { cursor: pointer; transition: transform 0.18s var(--ease), filter 0.18s ease; }
+.bp-badge.editable:hover { transform: scale(1.04); filter: brightness(1.06); }
+.bp-name { font-size: 19px; font-weight: 800; letter-spacing: -0.02em; word-break: break-word; }
+.bp-sub {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  max-width: 190px;
-  padding: 7px 13px 7px 10px;
-  border-radius: 9px 9px 0 0;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-bottom: 0;
-  box-shadow: 0 -2px 8px -4px rgba(15, 20, 36, 0.18);
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--acc);
+  background: var(--acc-soft);
+  padding: 3px 10px 3px 8px;
+  border-radius: 99px;
+  margin-top: 6px;
 }
-.bp-tab-ico {
-  width: 15px; height: 15px;
-  border-radius: 3px;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  flex-shrink: 0;
-}
-.bp-tab-txt {
-  font-size: 11.5px; font-weight: 600; color: var(--ink-soft);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-@media (max-width: 620px) { .bp-tab { margin-left: 0; } }
+.profile-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 
 .logo-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-
-#upload-drop {
-  border-color: var(--line) !important;
-  background: var(--surface-2) !important;
-}
-#upload-drop:hover {
-  border-color: var(--acc) !important;
-  background: var(--acc-soft) !important;
-  box-shadow: 0 0 0 1px var(--acc) inset;
-}
-#upload-drop svg {
-  color: var(--acc);
-}
 
 .accent-picker { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .accent-swatch {
@@ -2865,6 +3001,25 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
   color: var(--acc);
   border: 1px solid var(--acc-line);
 }
+
+/* ---------- Settings: Personalization (sidebar shortcuts) ---------- */
+.shortcut-list { display: flex; flex-direction: column; gap: 6px; }
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 10px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.shortcut-row.is-stale { opacity: 0.6; }
+.shortcut-body { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+.shortcut-label { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shortcut-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+/* ---- nav item extras for bank-mode shortcuts ---- */
+.nav-mode-ico { margin-left: auto; color: var(--muted); flex-shrink: 0; display: inline-flex; }
 
 /* ---------- Practice Mode ---------- */
 .practice-feedback {

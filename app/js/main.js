@@ -8,8 +8,17 @@ window.App = window.App || {};
     amber: { a: "#f59e0b", b: "#f97316" },
     rose: { a: "#f43f5e", b: "#ec4899" },
     cyan: { a: "#06b6d4", b: "#3b82f6" },
-    purple: { a: "#a855f7", b: "#ec4899" }
+    purple: { a: "#a855f7", b: "#ec4899" },
+    /* added for OLED / Tokyo Night, which want punchier or cooler-toned
+       accents than the original six — but they work fine under Light/Dark too */
+    sky: { a: "#7aa2f7", b: "#7dcfff" },
+    mint: { a: "#9ece6a", b: "#5eead4" },
+    coral: { a: "#f7768e", b: "#fb923c" },
+    gold: { a: "#ff9e64", b: "#fbbf24" }
   };
+
+  const THEMES = ["light", "dark", "oled", "tokyo-night", "nord", "sepia"];
+  const LIGHT_THEMES = ["light", "sepia"];
 
   const Main = {};
 
@@ -68,17 +77,23 @@ window.App = window.App || {};
   };
   Main.ACCENTS = ACCENTS;
 
-  /* Theme toggling lives in Settings now — this just applies the stored value. */
+  Main.THEMES = THEMES;
+  Main.LIGHT_THEMES = LIGHT_THEMES;
+
+  /* Theme picking lives in Settings now — this just applies the stored value. */
   Main.applyTheme = function () {
     const s = App.store.state.settings;
-    document.body.dataset.theme = s.theme === "dark" ? "dark" : "light";
+    document.body.dataset.theme = THEMES.indexOf(s.theme) !== -1 ? s.theme : "light";
     Main.applyAccent();
   };
 
   Main.applyAccent = function () {
     const s = App.store.state.settings;
     const theme = Main.accentPair();
-    const dark = document.body.dataset.theme === "dark";
+    /* every dark-family theme (dark/OLED/Tokyo Night/Nord) wants the same
+       bolder accent-soft tuning — light-family themes (Light/Sepia) get the
+       subtler one. */
+    const dark = LIGHT_THEMES.indexOf(document.body.dataset.theme) === -1;
     const [r, g, b] = hexRgb(theme.a);
     const root = document.documentElement.style;
     root.setProperty("--acc", theme.a);
@@ -92,9 +107,12 @@ window.App = window.App || {};
     if (App.branding) App.branding.apply();
   };
 
+  /* Quick binary flip (palette command) — Light goes to Dark; any of the
+     three dark-ish themes goes back to Light. The 4-way picker in Settings
+     is the way to reach OLED / Tokyo Night specifically. */
   Main.toggleTheme = function () {
     const s = App.store.state.settings;
-    App.store.setSetting("theme", s.theme === "dark" ? "light" : "dark");
+    App.store.setSetting("theme", LIGHT_THEMES.indexOf(s.theme) !== -1 ? "dark" : "light");
     Main.applyTheme();
   };
 
@@ -111,7 +129,6 @@ window.App = window.App || {};
     const nav = document.getElementById("side-nav");
     if (!nav) return;
     const store = App.store;
-    const names = store.bankNames();
     const stats = store.globalStats();
     const session = store.state.session;
     const practiceSession = store.state.practiceSession;
@@ -154,25 +171,44 @@ window.App = window.App || {};
       '<button class="nav-item' + (activeName === "settings" ? " active" : "") + '" data-nav="#/settings">' +
       '<span class="nav-ico">' + App.icon("gear", 17) + '</span><span>Settings</span></button>';
 
-    if (names.length) {
-      html += '<div class="nav-label">Study — Q&amp;A preview</div>';
-      names.slice(0, 6).forEach(function (n) {
-        const bank = store.getBank(n);
-        const count = bank.questions.length;
-        html +=
-          '<button class="nav-item' + (activeName === "study" && decodeURIComponent((location.hash.split("/study/")[1] || "")) === n ? " active" : "") + '" data-nav="#/study/' + encodeURIComponent(n) + '">' +
-          '<span class="nav-ico">' + App.ui.bankBadge(n, 16) + "</span>" +
-          '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + App.u.esc(n) + "</span>" +
-          '<span class="nav-pill">' + count + "</span></button>";
+    /* user-configured shortcuts — Settings → Personalization (groups, bank
+       launch-mode shortcuts, and custom links), in the order the user set. */
+    const links = store.getSidebarLinks();
+    if (links.length) {
+      html += '<div class="nav-label">Shortcuts</div>';
+      links.forEach(function (l) {
+        if (l.type === "group") {
+          if (!store.getGroup(l.groupName)) return;   // stale — the group was deleted since
+          html += '<button class="nav-item' + (activeName === "group" && decodeURIComponent((location.hash.split("/group/")[1] || "")) === l.groupName ? " active" : "") + '" data-nav="#/group/' + encodeURIComponent(l.groupName) + '">' +
+            '<span class="nav-ico">' + App.ui.groupBadge(l.groupName, 20) + "</span>" +
+            '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + App.u.esc(l.groupName) + "</span></button>";
+        } else if (l.type === "bank") {
+          if (!store.getBank(l.bankKey)) return;   // stale — the bank was deleted since
+          const modeIcon = l.mode === "exam" ? "play" : l.mode === "practice" ? "brain" : "study";
+          html += '<button class="nav-item" data-sidebar-link="' + l.id + '">' +
+            '<span class="nav-ico">' + App.ui.bankBadge(l.bankKey, 20) + "</span>" +
+            '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + App.u.esc(l.bankKey) + "</span>" +
+            '<span class="nav-mode-ico" title="' + (l.mode === "exam" ? "Exam" : l.mode === "practice" ? "Practice" : "QA Review") + '">' + App.icon(modeIcon, 13) + "</span></button>";
+        } else if (l.type === "link") {
+          html += '<a class="nav-item" href="' + App.u.esc(l.url) + '" target="_blank" rel="noopener noreferrer">' +
+            '<span class="nav-ico">' + App.ui.linkFavicon(l.url, 20) + "</span>" +
+            '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + App.u.esc(l.label) + "</span></a>";
+        }
       });
-      if (names.length > 6) {
-        html += '<button class="nav-item" data-nav="#/dashboard"><span class="nav-ico">' + App.icon("dots", 16) + '</span><span>All ' + names.length + ' banks…</span></button>';
-      }
     }
     nav.innerHTML = html;
 
     nav.querySelectorAll("[data-nav]").forEach(function (b) {
       b.onclick = function () { App.router.go(b.dataset.nav); };
+    });
+    nav.querySelectorAll("[data-sidebar-link]").forEach(function (b) {
+      b.onclick = function () {
+        const l = links.filter(function (x) { return x.id === b.dataset.sidebarLink; })[0];
+        if (!l) return;
+        if (l.mode === "exam") App.views.exam.openSetup(l.bankKey);
+        else if (l.mode === "practice") App.views.practice.openSetup(l.bankKey);
+        else App.router.go("#/study/" + encodeURIComponent(l.bankKey));
+      };
     });
     const resumeBtn = document.getElementById("nav-resume-exam");
     if (resumeBtn) resumeBtn.onclick = function () { App.views.exam.resumeSession(); };

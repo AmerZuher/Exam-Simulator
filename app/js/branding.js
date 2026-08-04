@@ -15,20 +15,23 @@ window.App = window.App || {};
   const B = {};
 
   B.DEFAULT_NAME = "ExamPro";
-  B.DEFAULT_TAGLINE = "Study & Simulate";
 
   const MAX_UPLOAD = 4 * 1024 * 1024;   // 4 MB source cap
   const RASTER_SIZE = 256;              // stored square, plenty for badge + favicon
   const SVG_INLINE_LIMIT = 64 * 1024;   // small SVGs stay vector
+
+  const BG_BY_THEME = { light: "#f4f6fb", dark: "#080c1a", oled: "#000000", "tokyo-night": "#1a1b26", nord: "#2e3440", sepia: "#f2e8d5" };
 
   let manifestUrl = null;
 
   B.name = function () {
     return (App.store.state.settings.appName || "").trim() || B.DEFAULT_NAME;
   };
+  /* Reframed as the user's Role — if it's never been set, this stays truly
+     empty (no placeholder text stands in for it anywhere it's displayed). */
   B.tagline = function () {
     const t = App.store.state.settings.appTagline;
-    return t == null ? B.DEFAULT_TAGLINE : String(t).trim();
+    return t == null ? "" : String(t).trim();
   };
   B.logoData = function () { return App.store.state.settings.logoData || null; };
   B.logoIcon = function () { return App.store.state.settings.logoIcon || "logo"; };
@@ -133,7 +136,7 @@ window.App = window.App || {};
       start_url: "index.html",
       display: "standalone",
       orientation: "any",
-      background_color: document.body.dataset.theme === "dark" ? "#080c1a" : "#f4f6fb",
+      background_color: BG_BY_THEME[document.body.dataset.theme] || BG_BY_THEME.light,
       theme_color: accentHex(),
       icons: [{ src: B.faviconUri(), sizes: "any", type: B.logoData() ? "image/png" : "image/svg+xml", purpose: "any" }]
     };

@@ -1806,6 +1806,156 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
   min-width: 28px;
 }
 
+/* ---------- Sign-in gate (mock "Continue with Google") ----------
+   A genuine full-page screen, not a dialog over a blurred app — it fully
+   replaces the viewport (solid page background, no glimpse of the shell
+   behind) and sits above literally everything else (help overlay, command
+   palette, toasts). That's also why it must not be bypassable by a keyboard
+   shortcut punching through a lower z-index — see the auth-gate guard in
+   main.js's global keydown handler.
+
+   The look borrows its layout from Google's own account-chooser page (a
+   plain canvas, a bordered card) but every colour — including the page
+   background itself — comes from the app's own theme tokens, the same
+   ones the rest of the shell uses (light/dark/OLED/Tokyo Night/Nord/Sepia
+   included), so it never looks like a screen bolted on from elsewhere. */
+.auth-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow-y: auto;
+  background-color: var(--bg);
+  background-image: var(--bg-grad);
+  animation: fadeIn 0.25s ease;
+}
+.auth-page {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-1);
+  padding: 40px 36px 32px;
+  text-align: center;
+  animation: popIn 0.32s var(--ease);
+}
+/* Sized to match .bp-badge in Settings → User Profile — same box a profile
+   photo already renders in elsewhere. */
+.auth-mark {
+  position: relative;
+  width: 76px; height: 76px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+/* Absolutely-positioned + inset:0, not width/height:100%: a percentage size
+   on a `place-items:center` grid item isn't reliably stretched to the grid
+   area by every engine — the item can size to the image's own content
+   instead, leaving the container's own background visible around it (which
+   is exactly what tracking the theme colour, rather than the image, was
+   showing). Pinning all four edges to the nearest positioned ancestor
+   sidesteps that grid-sizing question entirely — there's no percentage
+   left to misresolve. */
+.auth-mark img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
+/* the accent-gradient backdrop is only for the plain glyph fallback — a
+   real uploaded photo is already a complete picture, so it gets no extra
+   framing behind it */
+.auth-mark.brand { background: var(--acc-grad); border: 0; color: #fff; box-shadow: var(--acc-glow); }
+/* Circular crop, same as .bp-badge — a plain neutral ring instead of the
+   accent gradient (which is reserved for the icon fallback) behind it. */
+.auth-mark.has-photo { background: var(--surface-2); border: 1px solid var(--line); box-shadow: none; }
+.auth-title { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+.auth-sub { font-size: 13px; color: var(--muted); font-weight: 500; line-height: 1.5; margin: 6px 0 26px; }
+.auth-fine { font-size: 10.5px; color: var(--muted); font-weight: 500; line-height: 1.5; margin-top: 20px; opacity: 0.8; }
+.auth-back {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: none; border: 0; cursor: pointer; padding: 0;
+  font-size: 12px; font-weight: 700; color: var(--muted);
+  margin-bottom: 16px;
+}
+.auth-back:hover { color: var(--ink); }
+.auth-spinner {
+  width: 26px; height: 26px;
+  margin: 4px auto 14px;
+  border-radius: 50%;
+  border: 2.5px solid var(--acc-soft);
+  border-top-color: var(--acc);
+  animation: gen-spin 0.7s linear infinite;
+}
+.auth-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+/* Same button styling as the rest of the app's soft/ghost buttons — only
+   the Google "G" mark keeps its brand colours, everything else (surface,
+   border, text, hover) tracks the active theme. */
+.google-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  text-align: left;
+  font-family: inherit;
+}
+.google-btn:hover { border-color: var(--acc-line); background: var(--acc-softer); }
+.gbtn-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.gbtn-line1 { font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gbtn-line2 { font-size: 11px; color: var(--muted); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.google-btn .beta-badge { margin-left: auto; }
+.gbtn-avatar {
+  position: relative;
+  width: 30px; height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 12px;
+}
+.gbtn-avatar-generic { background: var(--surface-3); color: var(--ink-soft); }
+.gbtn-avatar.has-img { background: var(--surface-3); overflow: hidden; }
+.gbtn-avatar.has-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
+
+.gacc-list { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 4px; }
+.gacc-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  text-align: left;
+  color: var(--ink-soft);
+}
+.gacc-row:hover { border-color: var(--acc-line); background: var(--acc-softer); }
+.gacc-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.gacc-name { font-size: 13px; font-weight: 700; color: var(--ink); }
+.gacc-email { font-size: 11px; color: var(--muted); font-weight: 500; }
+
 /* ---------- Custom exam builder ---------- */
 .build-bank-row {
   display: flex;
@@ -2788,6 +2938,17 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
   border-radius: 99px;
   margin-top: 6px;
 }
+/* the signed-in Google (mock) email, shown under the tagline chip */
+.bp-account {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-top: 7px;
+}
+.bp-account .beta-badge { margin-left: 2px; }
 .profile-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 
 .logo-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }

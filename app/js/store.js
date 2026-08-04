@@ -43,7 +43,7 @@ window.App = window.App || {};
       banks: {},      // name -> { name, createdAt, questions: [] }
       history: {},    // name -> [{ ts, pct, correct, total, seconds, passed }]
       mastered: {},   // name -> { qid: true }
-settings: { theme: "light", accent: "indigo", sidebarCollapsed: false, dailyGoal: 20, sidebarLinks: [] },
+settings: { theme: "light", accent: "indigo", sidebarCollapsed: false, dailyGoal: 20, sidebarLinks: [], account: null },
     session: null,   // in-progress exam snapshot
     practiceSession: null,   // in-progress Practice Mode snapshot — its own slot, never mixed with `session`
     dueDates: {},    // legacy v1 schedule — migrated into `srs` on load
@@ -386,6 +386,20 @@ settings: { theme: "light", accent: "indigo", sidebarCollapsed: false, dailyGoal
 
     /* ---- settings ---- */
     setSetting: function (k, v) { this.state.settings[k] = v; this.saveSettings(); },
+
+    /* ---- account (mock sign-in — see app/js/auth.js) ---- */
+    getAccount: function () { return this.state.settings.account || null; },
+    signIn: function (acc) {
+      this.state.settings.account = Object.assign({}, acc, { signedIn: true, signedInAt: Date.now() });
+      this.saveSettings();
+      return this.state.settings.account;
+    },
+    signOut: function () {
+      const acc = this.state.settings.account;
+      if (!acc) return;
+      acc.signedIn = false;
+      this.saveSettings();
+    },
 
     /* ---- sidebar personalization ----
        Each entry is one of:

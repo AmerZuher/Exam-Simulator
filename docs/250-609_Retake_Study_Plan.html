@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>250-609 Clarity Technical Specialist — Retake Command Center</title>
+<style>
+  :root{
+    --bg:#080b13; --bg2:#0d1320; --card:#121927; --card2:#161f34; --line:#212a40;
+    --ink:#e7ebf5; --sub:#8f9ab3; --sub2:#6b7590;
+    --teal:#2dd4bf; --teal-d:#14b8a6; --blue:#60a5fa;
+    --red:#f87171; --amber:#fbbf24; --yellow:#fde047; --green:#4ade80; --purple:#a78bfa;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);}
+  a{color:inherit;}
+  button{font-family:inherit;}
+  ::-webkit-scrollbar{height:10px;width:10px;}
+  ::-webkit-scrollbar-thumb{background:#25304a;border-radius:6px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+
+  /* ---------- APP SHELL ---------- */
+  .appshell{display:flex;min-height:100vh;}
+  .sidebar{width:64px;flex-shrink:0;background:#0a0e17;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:6px;position:sticky;top:0;height:100vh;}
+  .sidebar .logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--teal),var(--blue));display:flex;align-items:center;justify-content:center;font-weight:900;color:#062b26;margin-bottom:16px;cursor:pointer;font-size:15px;flex-shrink:0;}
+  .sidebar .sidebtn{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:var(--sub2);cursor:pointer;font-size:18px;background:transparent;border:none;transition:.15s;}
+  .sidebar .sidebtn:hover{background:#161f34;color:var(--ink);}
+  .sidebar .sidebtn.active{background:#19233c;color:var(--teal);}
+  .sidebar .spacer{flex:1;}
+  .sidebar .sidebtn.ghost{color:#3d4863;cursor:default;}
+  .sidebar .sidebtn.ghost:hover{background:transparent;color:#3d4863;}
+
+  .app-main{flex:1;min-width:0;display:flex;flex-direction:column;}
+
+  .topheader{padding:18px 28px;display:flex;align-items:center;gap:24px;border-bottom:1px solid var(--line);flex-wrap:wrap;position:sticky;top:0;background:rgba(8,11,19,.9);backdrop-filter:blur(6px);z-index:30;}
+  .topheader .htitle{flex-shrink:0;}
+  .topheader h1{margin:0;font-size:19px;font-weight:800;}
+  .topheader .sub{font-size:12.5px;color:var(--sub2);margin-top:2px;}
+  .searchbar{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 14px;flex:1;max-width:520px;}
+  .searchbar:focus-within{border-color:var(--teal);}
+  .searchbar .ic{color:var(--sub2);font-size:14px;}
+  .searchbar input{background:none;border:none;outline:none;color:var(--ink);font-size:13.5px;flex:1;font-family:inherit;}
+  .searchbar input::placeholder{color:var(--sub2);}
+  .searchbar .kbd{font-size:10.5px;color:var(--sub2);border:1px solid var(--line);border-radius:5px;padding:2px 6px;flex-shrink:0;}
+
+  .content{padding:24px 28px 80px;max-width:1400px;width:100%;margin:0 auto;}
+
+  .caveat-bar{display:flex;align-items:center;gap:10px;background:#1a1420;border:1px solid #3a2445;border-radius:10px;padding:10px 16px;font-size:12.5px;line-height:1.5;color:#e8dff0;margin-bottom:18px;}
+  .caveat-bar b{color:var(--amber);flex-shrink:0;}
+
+  /* ---------- HERO BANNER ---------- */
+  .banner{display:flex;align-items:center;justify-content:space-between;gap:20px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 24px;margin-bottom:20px;flex-wrap:wrap;}
+  .banner-left{display:flex;align-items:center;gap:16px;flex:1;min-width:280px;}
+  .banner-icon{width:52px;height:52px;border-radius:13px;background:#0f2b2a;color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;position:relative;}
+  .banner-icon .streaknum{position:absolute;bottom:-5px;right:-5px;background:var(--card);border:2px solid var(--bg);color:var(--ink);font-size:10px;font-weight:800;border-radius:999px;width:19px;height:19px;display:flex;align-items:center;justify-content:center;}
+  .banner-text{flex:1;min-width:200px;}
+  .banner-text b{font-size:16px;}
+  .banner-text .d{font-size:12.5px;color:var(--sub2);margin-top:3px;}
+  .banner-bar{width:100%;height:6px;background:#1c2438;border-radius:4px;overflow:hidden;margin-top:11px;max-width:520px;}
+  .banner-bar .fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--blue));}
+  .banner-cta{flex-shrink:0;}
+  .btn{border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:.15s;}
+  .btn.primary{background:var(--teal);color:#062b26;}
+  .btn.primary:hover{background:var(--teal-d);}
+  .btn.ghost{background:var(--card2);color:var(--sub);border:1px solid var(--line);}
+  .btn.ghost:hover{color:var(--ink);border-color:var(--teal);}
+
+  /* ---------- STAT CARDS ---------- */
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
+  @media(max-width:900px){.stats-row{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:520px){.stats-row{grid-template-columns:1fr;}}
+  .stat2{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;}
+  .stat2 .icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:16px;}
+  .stat2 .n{font-size:25px;font-weight:800;}
+  .stat2 .l{font-size:10.5px;color:var(--sub2);text-transform:uppercase;letter-spacing:.5px;margin-top:4px;font-weight:800;}
+
+  /* ---------- SECTION HEAD ---------- */
+  .section-head{display:flex;align-items:center;justify-content:space-between;margin:6px 0 14px;gap:10px;flex-wrap:wrap;}
+  .section-head h2{font-size:16px;margin:0;}
+  .section-head .badge-count{font-size:11px;font-weight:700;background:var(--card2);color:var(--sub);padding:3px 10px;border-radius:999px;margin-left:8px;}
+
+  /* ---------- TODAY CARDS ---------- */
+  .today-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:32px;}
+  @media(max-width:900px){.today-grid{grid-template-columns:1fr;}}
+  .today-card{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--teal);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;}
+  .today-card.amber{border-top-color:var(--amber);}
+  .today-card.blue{border-top-color:var(--blue);}
+  .ticon{width:38px;height:38px;border-radius:9px;background:#0f2b2a;color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:16px;}
+  .ticon.amber{background:#241a08;color:var(--amber);}
+  .ticon.blue{background:#0d1f33;color:var(--blue);}
+  .today-card b{font-size:15px;}
+  .today-card p{font-size:12.6px;color:var(--sub);line-height:1.55;margin:0;}
+  .today-card .go{align-self:flex-start;background:#182238;color:var(--teal);border:none;border-radius:8px;padding:7px 13px;font-size:12.3px;font-weight:700;cursor:pointer;margin-top:2px;}
+  .today-card .go:hover{background:#1c2c48;}
+
+  /* ---------- FILTER CHIPS ---------- */
+  .filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+  .filter-row .flabel{font-size:11px;color:var(--sub2);text-transform:uppercase;letter-spacing:.5px;font-weight:800;margin-right:2px;}
+  .chip{border:1px solid var(--line);background:var(--card);padding:6px 13px;border-radius:999px;font-size:12px;font-weight:700;cursor:pointer;color:var(--sub);transition:.15s;}
+  .chip:hover{border-color:var(--teal);}
+  .chip.active{background:var(--teal);color:#062b26;border-color:var(--teal);}
+  .chip.clear{opacity:.65;font-weight:600;}
+
+  /* ---------- TOPIC GRID ---------- */
+  .topics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  @media(max-width:1100px){.topics-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:640px){.topics-grid{grid-template-columns:1fr;}}
+  .tcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;cursor:pointer;transition:.15s;display:flex;flex-direction:column;gap:13px;}
+  .tcard:hover{border-color:var(--teal);transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.35);}
+  .tcard-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .tcard-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .tcard-title{font-size:15px;font-weight:700;line-height:1.3;}
+  .tcard-sub{font-size:11.5px;color:var(--sub2);margin-top:3px;}
+  .tcard-more{background:none;border:1px solid var(--line);color:var(--sub2);width:26px;height:26px;border-radius:7px;font-size:12px;flex-shrink:0;}
+  .tcard-tags{display:flex;gap:6px;flex-wrap:wrap;}
+  .tag{font-size:10.5px;font-weight:800;padding:4px 10px;border-radius:999px;background:#1c2440;color:#a9b4d0;}
+  .tcard-progress-row{display:flex;justify-content:space-between;font-size:10.3px;color:var(--sub2);text-transform:uppercase;font-weight:800;letter-spacing:.4px;}
+  .tcard-bar{height:5px;background:#1c2438;border-radius:4px;overflow:hidden;}
+  .tcard-bar .fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--blue));}
+  .tcard-empty{grid-column:1/-1;text-align:center;color:var(--sub2);font-size:13px;padding:30px 0;font-style:italic;}
+
+  /* ---------- TOPIC PAGE ---------- */
+  .crumb{display:flex;align-items:center;gap:8px;color:var(--sub2);font-size:12.5px;margin-bottom:14px;}
+  .crumb button{background:none;border:none;color:var(--teal);cursor:pointer;font-size:12.5px;font-weight:700;padding:0;}
+
+  .topic-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:4px;}
+  .topic-head h1{font-size:24px;margin:0;}
+  .topic-head .badges{display:flex;gap:8px;flex-wrap:wrap;}
+  .topic-doc{font-size:12.5px;color:var(--blue);background:#0f1c33;border:1px solid #1c3454;padding:5px 11px;border-radius:7px;display:inline-block;margin:10px 0 20px;font-weight:600;}
+
+  .sec{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:14px;}
+  .sec h3{margin:0 0 10px;font-size:14px;text-transform:uppercase;letter-spacing:.6px;color:var(--teal);display:flex;align-items:center;gap:8px;}
+  .sec p{font-size:14.5px;line-height:1.7;color:#dde2ef;margin:0;}
+  .sec.usecase{border-left:3px solid var(--blue);}
+  .sec.usecase p{font-style:italic;color:#cfd8ea;}
+  .sec.explain{border-left:3px solid #a78bfa;}
+
+  .defgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;}
+  @media(max-width:700px){.defgrid{grid-template-columns:1fr;}}
+  .defitem{padding:10px 0;border-top:1px dashed var(--line);}
+  .defitem:nth-child(1),.defitem:nth-child(2){border-top:none;}
+  .defitem b{color:var(--ink);font-size:13.5px;}
+  .defitem span{display:block;font-size:13px;color:var(--sub);margin-top:2px;line-height:1.5;}
+
+  .fact{background:#1c1608;border:1px solid #4a3a10;border-left:4px solid var(--amber);border-radius:9px;padding:12px 15px;margin-top:10px;font-size:13.3px;line-height:1.6;color:#f3e6c4;}
+  .fact:first-child{margin-top:0;}
+  .fact b{color:var(--amber);}
+
+  .rights{display:flex;flex-wrap:wrap;gap:8px;}
+  .right-chip{background:#0f1c33;border:1px solid #1c3454;color:#bcd4f5;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px;}
+
+  .checklist{list-style:none;margin:0;padding:0;}
+  .checklist li{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-top:1px dashed var(--line);font-size:13.8px;line-height:1.5;}
+  .checklist li:first-child{border-top:none;}
+  .checklist input{margin-top:3px;width:16px;height:16px;accent-color:var(--teal);flex-shrink:0;cursor:pointer;}
+  .checklist label{cursor:pointer;}
+  .checklist input:checked + label{color:var(--sub2);text-decoration:line-through;}
+
+  .steps{margin:0;padding-left:20px;font-size:14px;line-height:1.9;color:#dde2ef;}
+
+  .final-box{background:linear-gradient(160deg,#132033,#0d1424);border:1px solid var(--line);border-radius:14px;padding:24px 26px;}
+  .final-box h3{margin-top:0;font-size:16px;color:var(--teal);}
+  .final-box ul{margin:8px 0 0;padding-left:20px;font-size:14px;line-height:1.8;color:#dde2ef;}
+  .final-box ul li b{color:#fff;}
+
+  /* ---------- FLASHCARDS ---------- */
+  .flash-wrap{max-width:640px;margin:20px auto 0;text-align:center;}
+  .flash-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:44px 34px;min-height:200px;display:flex;flex-direction:column;justify-content:center;gap:14px;}
+  .flash-topic{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--teal);font-weight:800;}
+  .flash-fact{font-size:16.5px;line-height:1.6;color:var(--ink);}
+  .flash-controls{display:flex;justify-content:center;gap:10px;margin-top:18px;}
+  .flash-counter{font-size:12.5px;color:var(--sub2);margin-top:12px;}
+  .flash-counter a{color:var(--teal);text-decoration:underline;cursor:pointer;}
+  .navbtn{border:1px solid var(--line);background:var(--card);color:var(--sub);padding:8px 14px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;}
+  .navbtn:hover{border-color:var(--teal);color:var(--ink);}
+  .navbtn.primary{background:var(--teal);color:#062b26;border-color:var(--teal);}
+  .navbtn.primary:hover{background:var(--teal-d);}
+</style>
+</head>
+<body>
+
+<div class="appshell">
+  <div class="sidebar">
+    <div class="logo" onclick="go('dashboard')" title="Dashboard">CT</div>
+    <button class="sidebtn" id="nav-dashboard" onclick="go('dashboard')" title="Dashboard">▦</button>
+    <button class="sidebtn" id="nav-score" onclick="goScoreChart()" title="Score breakdown">📊</button>
+    <button class="sidebtn" id="nav-flashcards" onclick="go('flashcards')" title="Flashcards">🃏</button>
+    <button class="sidebtn" id="nav-tips" onclick="go('topic','exam-tips')" title="Exam-day tips">🎓</button>
+    <div class="spacer"></div>
+    <button class="sidebtn" onclick="resetStartDate()" title="Reset day-tracker to today">↻</button>
+    <button class="sidebtn ghost" title="More coming soon">⋯</button>
+  </div>
+
+  <div class="app-main">
+    <div class="topheader">
+      <div class="htitle">
+        <h1>Dashboard</h1>
+        <div class="sub">Your 250-609 retake plan at a glance</div>
+      </div>
+      <div class="searchbar">
+        <span class="ic">🔍</span>
+        <input id="searchInput" type="text" placeholder="Search topics, facts and actions...">
+        <span class="kbd">Ctrl K</span>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div id="view-dashboard">
+        <div class="caveat-bar"><b>Reality check:</b> nothing here guarantees a pass — it depends on how much of it actually sticks. This plan closes the gaps your score report showed: business rationale, exact terminology, and access rights.</div>
+
+        <div class="banner">
+          <div class="banner-left">
+            <div class="banner-icon"><span>🔥</span><span class="streaknum" id="bannerStreakNum">0</span></div>
+            <div class="banner-text">
+              <div><b id="bannerTitle">Day 1 of 6</b></div>
+              <div class="d" id="bannerSub">0 of 76 items done · 76 remaining</div>
+              <div class="banner-bar"><div class="fill" id="bannerFill" style="width:0%"></div></div>
+            </div>
+          </div>
+          <div class="banner-cta"><button class="btn primary" id="bannerCta" onclick="continueStudying()">▶ Continue studying</button></div>
+        </div>
+
+        <div class="stats-row" id="statsRow"></div>
+
+        <div class="section-head"><h2>Today</h2><button class="btn ghost" onclick="goScoreChart()">📊 Full progress</button></div>
+        <div class="today-grid" id="todayGrid"></div>
+
+        <div class="section-head">
+          <h2>Study Topics <span class="badge-count" id="topicCount"></span></h2>
+          <button class="btn ghost" onclick="go('flashcards')">🃏 Flashcards</button>
+        </div>
+        <div class="filter-row" id="dayFilterRow"></div>
+        <div class="filter-row" id="priorityFilterRow"></div>
+        <div class="topics-grid" id="topicsGrid"></div>
+
+        <div class="section-head" style="margin-top:34px;"><h2>Where you actually stand</h2></div>
+        <div class="sec" id="scoreChartSec"><div id="scoreChart"></div><div style="text-align:right;font-size:11px;color:var(--sub2);margin-top:6px;">White line = 70% passing threshold</div></div>
+      </div>
+
+      <!-- TOPIC PAGES CONTAINER -->
+      <div id="view-topic" style="display:none;"></div>
+
+      <!-- FLASHCARDS -->
+      <div id="view-flashcards" style="display:none;"></div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================= DATA ============================= */
+const DAYS = [
+  {id:1, title:"Hierarchies & Roadmaps", hours:"6h", goal:"Your two lowest scores and the exam's lead objectives."},
+  {id:2, title:"Tasks, Staffing & OBS", hours:"6h", goal:"Execution + resource governance layer."},
+  {id:3, title:"Blueprints & System Settings", hours:"6h", goal:"How the system is configured to enforce behavior."},
+  {id:4, title:"Plans, Processes & Actions", hours:"6h", goal:"Workflow, lifecycle & sharing mechanics."},
+  {id:5, title:"Financials, Reports & Access Rights", hours:"6h", goal:"Cost layer + your #1 self-identified weak spot."},
+  {id:6, title:"Simulation & Final Review", hours:"6h", goal:"Timed exam, triage, rapid-fire recall."}
+];
+
+const TOPICS = [
+{id:"hierarchies", day:1, title:"Hierarchies", priority:"critical", score:"Was 25%", hours:"3.0h", type:"concept",
+ doc:"Create and Edit Hierarchies — techdocs.broadcom.com/ppm",
+ what:"A Hierarchy is a visual tree, built in a drag-and-drop workspace, that links investments (projects, ideas, apps, products, custom investments) together in parent-child relationships. A single hierarchy can hold up to 500 investments, and the same investment can't be added twice.",
+ why:"Executives don't evaluate investments one at a time. Hierarchies let child investments roll up under a parent so leadership can prioritize, report, and analyze work by business outcome instead of by isolated project — this is the exam's core \"Digital Product Management\" objective.",
+ when:"Use a hierarchy whenever leadership needs a rollup view: grouping projects under a strategic product or program, building a portfolio tree for governance review, or preparing metric-based data for a prioritization exercise.",
+ useCase:"A VP of Product wants to see, at a glance, which of the 40 projects under \"Customer Portal\" are burning the most budget and which are behind schedule. An admin builds a hierarchy with \"Customer Portal\" as the parent card, drags each project in as a child, then adds Cost and Schedule Health metric columns. The VP now reviews one tree instead of 40 separate project pages.",
+ definitions:[
+   {t:"Card", d:"The visual node representing one investment in the hierarchy tree."},
+   {t:"Parent-child link", d:"Created by dragging a child card onto a parent card; the tree auto-refreshes when links or investments change."},
+   {t:"Hierarchy Node", d:"The underlying data object linking an investment to its position in the tree — exposed via the Hierarchy Nodes API."},
+   {t:"Metric column", d:"A configurable rollup column (cost, count, custom metric) added to cards for reporting."}
+ ],
+ explanation:"Hierarchies refresh automatically whenever investments or links are added or removed, and top out at 500 investments per hierarchy. Admins can also create and edit hierarchies and their nodes programmatically via the Hierarchy and Hierarchy Nodes APIs — worth knowing if the exam frames a question around automation or bulk setup rather than manual drag-and-drop.",
+ facts:["Creating, viewing, or deleting <b>custom metrics</b> requires the <b>Hierarchy – Manage Metrics</b> right — this is distinct from Hierarchy – Edit, and the exam tests that distinction directly (Sample Q2 answer: B).",
+        "<b>Investment – Navigate</b> is required to import investments into a hierarchy — a right that lives on the Investment object, not the Hierarchy object."],
+ rights:["Hierarchy – Navigate (view only)","Hierarchy – Edit – All (structure)","Hierarchy – Manage Metrics (custom metrics)","Investment – Navigate (to import investments)"],
+ checklist:[
+   "Read the full \"Create and Edit Hierarchies\" doc end to end.",
+   "Build a hierarchy: Administration → Hierarchies → New → add 2-3 levels → add a metric column → save.",
+   "Import investments into the hierarchy via drag-and-drop.",
+   "Write all 4 access rights from memory before checking the list above.",
+   "Explain out loud how a hierarchy maps business objectives to investments.",
+   "Redo Sample Question 2 from the study guide without looking at the answer."
+ ]},
+
+{id:"roadmaps", day:1, title:"Roadmaps", priority:"critical", score:"Was 25%", hours:"3.0h", type:"concept",
+ doc:"Top-Down Planning with Roadmaps — techdocs.broadcom.com/ppm",
+ what:"Roadmaps are a visual top-down planning tool — a Board, Grid, or Timeline of \"roadmap items\" (initiatives, themes, releases) that can optionally be linked to real underlying investments.",
+ why:"Top-down planning starts with strategy — budget, timeframe, themes — and works down into execution, the opposite of aggregating bottom-up project plans. Roadmaps are how Clarity operationalizes that flow so leadership can lay out what should happen before individual projects even exist.",
+ when:"Use roadmaps for annual/quarterly planning cycles, portfolio-level strategy communication, or any scenario where you need to plan \"what and when\" at a high level before assigning work to specific project execution.",
+ useCase:"A PMO is planning next year's product themes. They create a roadmap with quarterly swimlanes, add roadmap items like \"Mobile App Redesign\" and \"API Modernization\" as cards on the Board layout, then link each item to its real investment record once a project is chartered — giving leadership one strategic view months before detailed project plans exist.",
+ definitions:[
+   {t:"Roadmap item", d:"An entry on the roadmap representing an initiative or theme, which may or may not yet be linked to a real investment."},
+   {t:"Swimlane", d:"A horizontal grouping (by team, theme, or timeframe) used in Board/Timeline layouts."},
+   {t:"Field-Level Security (FLS)", d:"Attribute-level access control on Roadmap/Roadmap Item fields. FLS always overrides object-level access rights, and only applies in the new Clarity experience, not Classic PPM."},
+   {t:"Scenario", d:"An alternate version of a roadmap used for what-if planning."}
+ ],
+ explanation:"Security here is layered: Roadmap – Navigate and Roadmap – Author control object-level access, but Field-Level Security sits on top and always wins. That means a user with full Roadmap – Author rights can still be blocked from editing one specific field by FLS — a common exam trap that tests whether you understand the precedence, not just the individual rights.",
+ facts:["In the <b>Board layout</b>, cards can display up to <b>6 fields across 2 columns</b> and up to <b>6 metrics across 3 columns</b> — memorize these two numbers exactly (Sample Q1 answer: C).",
+        "<b>Roadmap – Navigate</b> only lets a user view roadmaps they already have access to. <b>Roadmap – Author</b> is required to view, edit, delete, manage picklists, views, and scenarios."],
+ rights:["Roadmap – Navigate","Roadmap – Author","Field-Level Security (overrides both, new experience only)"],
+ checklist:[
+   "Read \"Top-Down Planning with Roadmaps\" end to end, focused on the access-rights section.",
+   "Build a roadmap: New Roadmap → define timeframe/swimlanes → add items manually → import a CSV → link an item to a real investment.",
+   "Switch the same roadmap between Board, Grid, and Timeline layouts — note what changes in each.",
+   "List the access rights required to create a roadmap from memory, then verify.",
+   "Create a custom attribute on a roadmap item and confirm it shows as a card field.",
+   "Redo Sample Question 1 from the study guide without looking at the answer."
+ ]},
+
+{id:"tasks", day:2, title:"Working with Tasks", priority:"critical", score:"Was 29%", hours:"2.5h", type:"concept",
+ doc:"Working with Tasks — techdocs.broadcom.com/ppm",
+ what:"Tasks are the units of work inside a project schedule, manageable in three interchangeable layouts on the same underlying data — Grid (spreadsheet-style), Board (kanban-style), and Timeline (Gantt-style).",
+ why:"Different roles think about work differently: a PM wants a Gantt timeline, a delivery team wants a kanban board, a resource manager wants a grid of ETC. Clarity keeps one task data model and lets each layout present it differently, so no one has to leave their preferred view.",
+ when:"Use Grid for bulk data entry/editing, Board for team-facing kanban-style execution tracking, and Timeline for date/dependency-heavy scheduling and critical-path visualization.",
+ useCase:"A delivery team runs daily standups against the Board layout, dragging tasks across To Do / In Progress / Done. Meanwhile the PM reviews the exact same tasks in Timeline to check the critical path before a steering committee meeting — same data, two views, two audiences.",
+ definitions:[
+   {t:"ETC (Estimate to Complete)", d:"Remaining effort/hours needed to finish a task assignment."},
+   {t:"Loading pattern", d:"How ETC is distributed for a resource across a task's date range — Back, Uniform, Fixed, or Front."},
+   {t:"Autoschedule", d:"The engine that computes early/late start and finish dates using duration, constraints, dependencies, and loading pattern, following the critical path."},
+   {t:"Critical path", d:"The sequence of dependent tasks that determines the shortest possible project duration."}
+ ],
+ explanation:"Autoschedule doesn't just push dates forward — it actively checks any assignment set to a Fixed loading pattern and adjusts Early Start/Early Finish to fit that fixed curve. That means a single Fixed-pattern assignment can shift the computed schedule for the whole task, which is exactly the kind of scenario the exam likes to test.",
+ facts:["<b>Front</b> load pattern = effort loaded as close to the task's <b>start</b> as possible. Back = as close to the end. Uniform = spread evenly. Fixed = a user-defined curve (Sample Q6 answer: D)."],
+ rights:[],
+ checklist:[
+   "Read the doc, focused on what's identical vs. different across Grid, Board, and Timeline.",
+   "Create the same task set in all three layouts; assign resources and set one dependency in each.",
+   "Run Autoschedule and manually toggle each load pattern — watch how ETC redistributes.",
+   "Write the exact click path from memory: open task → autoschedule settings → change load pattern → recalculate."
+ ]},
+
+{id:"staffing", day:2, title:"Staffing", priority:"high", score:"Was 43%", hours:"2.0h", type:"concept",
+ doc:"Analyze Resource Allocation and Staffing — techdocs.broadcom.com/ppm",
+ what:"The Staffing workspace is a cross-object grid (the Staff Grid) plus an Allocations Timeline that lets you manage resource allocation across every investment type — projects, ideas, and custom investments — in one place.",
+ why:"Resource managers need to see supply vs. demand across the whole portfolio, not investment by investment. The Staffing workspace exists so one resource manager can staff, spot over-allocation, and adjust across dozens of investments without opening each one individually.",
+ when:"Use it during resource planning cycles, when reallocating staff across competing priorities, or whenever a PMO needs a single portfolio-wide view of who's overbooked.",
+ useCase:"A resource manager needs to move a developer off a delayed project onto a higher-priority one. Instead of opening each project separately, they open the Staff Grid, filter to that resource, see every allocation across investments in one row, and adjust the percentage directly in the grid.",
+ definitions:[
+   {t:"Allocation", d:"The planned percentage/amount of a resource's time committed to an investment."},
+   {t:"Assignment", d:"The actual task-level work a resource is assigned to complete — distinct from the higher-level allocation."},
+   {t:"Staff Grid", d:"The cross-object grid showing all investments and their staffing attributes."},
+   {t:"Allocations Timeline", d:"A time-phased view of allocation vs. availability."}
+ ],
+ explanation:"Availability can display in absolute units (hours/FTE) or as a percentage, controlled by the Unit of Measure setting in General Settings. That single setting changes how every resource manager reads capacity across the entire Staffing workspace — not just one screen — which is why the exam frames it as a system-wide configuration decision.",
+ facts:["<b>Staffing – Navigate</b> is required just to view the Staffing page.",
+        "The <b>Resource Availability</b> panel in the Resource Workspace — not \"Allocations by Investment\" or \"Allocations by Resource\" — is the one showing allocation + availability per resource per period (Sample Q7 answer: C).",
+        "Set <b>Unit of Measure = %Availability</b> in General Settings to display availability as a percentage instead of hours/FTE (Sample Q8 answer: B)."],
+ rights:["Staffing – Navigate"],
+ checklist:[
+   "Read the doc; be clear on the difference between an Allocation and an Assignment.",
+   "Add staff to an investment via the Allocations by Investment tab and edit staffing details.",
+   "Open the Resource Workspace and identify the panel showing allocation + availability for a period.",
+   "In General Settings, toggle Unit of Measure to %Availability and confirm the display change.",
+   "Redo Sample Questions 6, 7, and 8 without looking at the answers."
+ ]},
+
+{id:"obs", day:2, title:"Working with OBS", priority:"high", score:"Was 50%", hours:"1.5h", type:"concept",
+ doc:"Configuring an OBS — techdocs.broadcom.com/ppm",
+ what:"An Organizational Breakdown Structure (OBS) is a hierarchical representation of your company — such as a Department OBS (org chart) or Location OBS (geography) — used to align resources, projects, and investments to org structure.",
+ why:"Security and reporting in Clarity are frequently driven by \"where\" something sits organizationally, not just by individual user permissions. OBS gives you that org-aware layer instead of managing security user by user.",
+ when:"Use OBS when you need department- or location-based security (e.g. only Finance-department managers can edit Finance projects), org-aligned reporting rollups, or as the structural backbone for OBS-driven Plans.",
+ useCase:"A global company wants regional resource managers to only see and edit resources in their own region. An admin builds a Location OBS, associates it with the Resource object, and assigns each resource to its region's OBS unit — access and reporting now automatically follow the org structure.",
+ definitions:[
+   {t:"OBS unit", d:"One node in the OBS tree, e.g. a specific department or location."},
+   {t:"OBS type", d:"The category of OBS — Department OBS represents an org chart; Location OBS represents geography."},
+   {t:"Association", d:"The link between an OBS and an object type (Project, Resource, financial entity) that determines where that OBS can be applied."},
+   {t:"Financial OBS unit creation", d:"For Location OBS specifically, a financial administrator creates locations during financial setup, which automatically creates the matching OBS unit."}
+ ],
+ explanation:"The same OBS can be associated with multiple object types, but each association independently controls where that structure applies — a project can be governed by one OBS while its resources are governed by a completely different one. This independence is exactly what the exam probes when it describes a scenario with mismatched security expectations.",
+ facts:["OBS changes cascade: hierarchy, Plans, and security can all inherit from the OBS, so an OBS misconfiguration is a common root cause in exam scenario questions."],
+ rights:[],
+ checklist:[
+   "Build an OBS: Administration → OBS → New OBS → add hierarchical units.",
+   "Associate the OBS with two object types (e.g. Projects and Resources) and note how association options differ.",
+   "Assign an OBS unit to a specific project/resource record.",
+   "Explain from memory how OBS drives security and reporting — the \"why,\" not just the \"how.\""
+ ]},
+
+{id:"blueprints", day:3, title:"Clarity Blueprints", priority:"high", score:"Was 43%", hours:"2.5h", type:"concept",
+ doc:"Getting Started with Blueprints — techdocs.broadcom.com/ppm",
+ what:"Blueprints are the no-code configuration layer controlling how end users experience an object — Project, Idea, custom investment, Page, or custom master object — including layouts, sub-objects, and Business Rules.",
+ why:"Instead of custom development, admins use Blueprints to make Clarity behave differently in different situations — auto-locking a record, enforcing required fields, or auto-granting security — all without writing code.",
+ when:"Use Blueprints whenever object behavior needs to change based on data (conditional required fields, read-only locking, auto-permissions), or when standardizing how a specific investment type should look and behave for its users.",
+ useCase:"A governance team wants any project marked \"At Risk\" to automatically become read-only for everyone except the PMO, and wants the assigned project manager to automatically receive edit rights the moment they're set as PM. Both are built as Business Rules inside the project's Blueprint — no custom code required.",
+ definitions:[
+   {t:"Business Rule", d:"A Blueprint-level rule with a condition and an action. Type \"View Page\" runs every time a page is viewed (one complex condition); type \"Attribute Update\" runs when a chosen attribute changes (supports multiple condition blocks)."},
+   {t:"Disable Editing Record", d:"A Business Rule action that marks a record read-only when its condition is met."},
+   {t:"Security Update", d:"A Business Rule action that automatically grants or revokes access rights when its condition is met."},
+   {t:"Sub-Object Instance Creation control", d:"A Blueprint setting governing whether/how child records can be created under a parent."}
+ ],
+ explanation:"Business Rules scale to up to 50 rules per object and 250 per Blueprint, with rule names up to 256 characters. These numeric limits are easy to confuse with similar limits elsewhere in the product (like the 50-process cap on a Blueprint) — worth keeping a clean mental table of \"what maxes out at 50\" vs. \"what maxes out at 250.\"",
+ facts:["To auto-grant access rights when a user is assigned as project manager, use a Business Rule with a <b>Security Update</b> action. \"Automatic Rights Assignment\" and \"Project Manager Role Configuration\" are not real Clarity features — they're plausible-sounding distractors (Sample Q3 answer: B)."],
+ rights:[],
+ checklist:[
+   "Read the doc, focused on Business Rules and Sub-Object Instance Creation.",
+   "Open/edit a blueprint for one object; walk through Configure Modules and Enforce Required Attributes.",
+   "Create a Business Rule that auto-updates security when a condition is met (e.g. a field = Project Manager).",
+   "Redo Sample Question 3 from the study guide without looking at the answer."
+ ]},
+
+{id:"default-settings", day:3, title:"Default Project Settings", priority:"high", score:"Was 50%", hours:"2.0h", type:"concept",
+ doc:"Project Management Settings — techdocs.broadcom.com/ppm",
+ what:"System-level Project Management Settings define the defaults every new project inherits — base calendars, risk/issue thresholds, and target-date rules — so PMs don't configure them project by project.",
+ why:"Standardizing these settings ensures consistent scheduling assumptions (working days/hours) and consistent risk governance (what counts as over threshold) across the whole portfolio, instead of every PM inventing their own rules.",
+ when:"Configure these once during system setup, or whenever the organization's working calendar or risk tolerance changes — not per project.",
+ useCase:"A PMO wants every risk with an impact date inside 5 days to be flagged red automatically, and wants target resolution dates to normally fall before the impact date, with narrow exceptions. Both are enforced centrally through Project Management Settings rather than trusting each PM to configure it manually.",
+ definitions:[
+   {t:"Base calendar", d:"The default working-day/working-hour calendar new projects inherit."},
+   {t:"Risk threshold", d:"The system-wide rule defining when a risk or issue is flagged as over/under threshold."},
+   {t:"Target Resolution Date", d:"The date by which a risk or issue should be resolved — by default constrained to on/before the Impact Date unless explicitly allowed to be later."},
+   {t:"Impact Date", d:"The date by which a risk's consequences would be felt if left unresolved."}
+ ],
+ explanation:"The \"Allow Risk and Issue Target Resolution Date to be Greater than the Impact Date\" option is a specific toggle that overrides the default constraint — a good example of how these system settings encode business policy (risk governance), not just UI defaults.",
+ facts:[],
+ rights:[],
+ checklist:[
+   "Set system-level default project management settings.",
+   "Create/edit a base calendar.",
+   "Set the risk threshold and configure over/under threshold rules.",
+   "Write the nav path from memory: Administration → Project Management → System Options."
+ ]},
+
+{id:"general-settings", day:3, title:"General System Settings", priority:"medium", score:"Was 60%", hours:"1.5h", type:"concept",
+ doc:"Configure General System Settings — techdocs.broadcom.com/ppm",
+ what:"General System Settings is the administration screen governing system-wide behavior not tied to any one module — authentication, mail, saved views, and file upload restrictions.",
+ why:"These are whole-system policies (security, compliance, housekeeping) that need one single source of truth rather than being configurable per user or per project.",
+ when:"Configure once at implementation time, and revisit whenever compliance/security requirements change — e.g. a new file-type restriction policy or switching to SAML SSO.",
+ useCase:"A security audit requires that only standard document/image formats can be uploaded anywhere in Clarity. An admin sets Authorized File Extensions to \"doc,docx,pdf,xls,xlsx,ppt,pptx,jpg,gif\" (comma-separated, no spaces) — any other file type is now blocked system-wide, with a message shown to users on upload.",
+ definitions:[
+   {t:"Authorized File Extensions", d:"A comma-separated allow-list of upload file types. Left empty, all types are allowed."},
+   {t:"SAML authentication", d:"Single sign-on configuration enabling federated login."},
+   {t:"Delete Unsaved Views", d:"A housekeeping setting controlling whether unsaved grid/view configurations are purged."},
+   {t:"Mail service setup", d:"SMTP configuration enabling Clarity-generated email notifications."}
+ ],
+ explanation:"The Authorized File Extensions restriction has one notable exception: it does not apply to documents uploaded via XOG (Clarity's XML Open Gateway integration API). That's an easy detail to miss and a realistic exam trap — the restriction is a UI-layer control, not a hard system-wide block.",
+ facts:["Restricting upload file types to standard doc/image formats = the <b>Authorized File Extensions</b> setting, not Document Management, File Scanning, or Non-Participant access (Sample Q5 answer: A)."],
+ rights:[],
+ checklist:[
+   "Locate Enable Clarity, Delete Unsaved Views, SAML authentication, and mail service setup.",
+   "Find the Authorized File Extensions setting specifically.",
+   "Redo Sample Question 5 without looking at the answer."
+ ]},
+
+{id:"plans", day:4, title:"Working with Plans", priority:"medium", score:"Was 67%", hours:"2.0h", type:"concept",
+ doc:"Working with Plans — techdocs.broadcom.com/ppm",
+ what:"Plans (Workforce Modeling) let you build an OBS-driven, top-down capacity/demand plan mirroring your Investment OBS structure — distinct from bottom-up project-level staffing.",
+ why:"Portfolio and resource leaders need to model supply vs. demand at the org level, by OBS unit, months before specific projects even exist.",
+ when:"Use Plans during annual/quarterly workforce planning, when a department head needs to forecast and lock in capacity commitments, or when parent-level leadership needs a rolled-up view across multiple child plans.",
+ useCase:"A department head finishes modeling next fiscal year's headcount and investment demand for their OBS unit. To submit it for portfolio-level approval — sharing it upward to the parent plan while preventing further edits — they use Publish, which creates a version of the plan and makes it read-only.",
+ definitions:[
+   {t:"Investment OBS-Driven Plan", d:"A plan structured to mirror the Investment OBS hierarchy, created via New Plan from OBS."},
+   {t:"Version", d:"A locked snapshot of a plan, created automatically when publishing."},
+   {t:"Publish", d:"The action that versions a plan, makes it read-only, and syncs it to parent plans."},
+   {t:"Synchronize", d:"Pulling updated OBS unit or investment table changes into an existing plan without a full rebuild."}
+ ],
+ explanation:"Plans now supports its own Blueprint with Business Rules — the same conditional-behavior patterns used for projects (read-only locking, required fields) can also apply to the Plans workspace. That connects this topic directly back to Day 3's Blueprint content, so review them together if either feels shaky.",
+ facts:["<b>Publish</b> — not Commit, not setting status to \"Complete,\" not exporting to Excel — is the correct action to submit a plan for approval, share it with parent plans, and lock it read-only (Sample Q9 answer: C)."],
+ rights:[],
+ checklist:[
+   "Create an Investment OBS-Driven Plan and configure it.",
+   "Set financial-year targets for a parent plan owner.",
+   "Create a version of the plan, then Publish it — confirm it's read-only and synced to the parent.",
+   "Synchronize an OBS unit change into the plan.",
+   "Redo Sample Question 9 without looking at the answer."
+ ]},
+
+{id:"processes", day:4, title:"Working with Processes", priority:"medium", score:"Was 60%", hours:"2.0h", type:"concept",
+ doc:"Working with Processes — techdocs.broadcom.com/ppm",
+ what:"Processes are Clarity's no-code workflow/automation engine — sequences of steps (manual actions, job actions, notifications, splits/joins) triggered from an object's Actions menu.",
+ why:"Many governance workflows — approval chains, automated status changes, notification cascades — need to run consistently without a developer writing custom code every time.",
+ when:"Use processes for approval workflows, multi-step governance (e.g. project intake → review → approval), or any repeatable sequence that should trigger notifications or system actions automatically.",
+ useCase:"A PMO wants every newly submitted idea to go through a two-step approval: first a manual review action assigned to a portfolio manager, then — if approved — an automated job action that converts the idea into a project and notifies the requester. The entire flow is built as a Process attached to the Idea's Blueprint.",
+ definitions:[
+   {t:"Process Step", d:"One node in the process flow — Start, Finish, or an intermediate action step."},
+   {t:"Manual action", d:"A step requiring a human to complete or approve it."},
+   {t:"Job action", d:"A step that triggers an automated system job."},
+   {t:"Split / Join", d:"Process-flow branching: a split sends one step to parallel paths; a join brings parallel paths back together."}
+ ],
+ explanation:"Processes triggered manually via the Actions button do NOT enforce any partition logic configured on the process definition — a subtle but real gotcha, since the same process can behave differently depending on whether it's triggered automatically or manually. A single Blueprint can hold a maximum of 50 processes, and you need Process Start or Process Manage rights just to execute one.",
+ facts:["Executing a process requires <b>Process Start</b> or <b>Process Manage</b> access rights, and the process must already be added to the associated blueprint.",
+        "A process that's on hold or disabled throws a runtime error if triggered."],
+ rights:["Process Start","Process Manage"],
+ checklist:[
+   "Build a process: define properties, Start options, edit Start/Finish steps.",
+   "Add a manual action step and a job action step.",
+   "Define a process-step notification.",
+   "Create a split and a join, then validate via the process flow diagram."
+ ]},
+
+{id:"actions-framework", day:4, title:"Actions Framework", priority:"medium", score:"Was 67%", hours:"2.0h", type:"concept",
+ doc:"Working with Actions Framework — techdocs.broadcom.com/ppm",
+ what:"The Actions Framework is the administration layer controlling which system-level actions — CSV Import, sharing views, sharing staffing scenarios — are available, to whom, and on which objects.",
+ why:"Not every action should be available to every user on every object. The Actions Framework gives admins fine-grained, group-based control without touching individual object security.",
+ when:"Use it whenever you need to enable/restrict a system action for specific Clarity Groups, or when troubleshooting why a user can't see a CSV Import or Share button.",
+ useCase:"A company wants only members of the \"Data Stewards\" group to bulk-import project data via CSV, while every user should be able to share their own saved views with teammates. An admin configures the CSV Import action's Secure/Access fields to the Data Stewards group, while leaving Views – Share with People open to all.",
+ definitions:[
+   {t:"Enabled flag", d:"Turns an action on/off system-wide without touching its access configuration."},
+   {t:"Secure / Access fields", d:"Limit an action's availability to specific Clarity Groups."},
+   {t:"Views – Share with People", d:"Share a saved view with specific users who already have view access."},
+   {t:"Views – Share with Groups / Everyone", d:"Broader sharing options for saved views, by Clarity Group or system-wide."}
+ ],
+ explanation:"The Enabled flag and the Secure/Access group restriction are independent controls — an action can be \"on\" system-wide but still invisible to a specific user if their group isn't in the Access list. That two-layer model is a common source of \"why can't I see this button\" support tickets, and a realistic exam scenario.",
+ facts:["CSV Import availability is controlled at two levels: the global Enabled flag, and the Secure/Access group restriction — both need to line up for a user to see it."],
+ rights:[],
+ checklist:[
+   "Configure an object using the CSV Import capability.",
+   "Create a view and share it with all Clarity users.",
+   "Share a staffing scenario with a specific user and a group — note the permission differences."
+ ]},
+
+{id:"financials", day:5, title:"Clarity Financials", priority:"medium", score:"Was 57%", hours:"2.5h", type:"concept",
+ doc:"Clarity Financials — techdocs.broadcom.com/ppm",
+ what:"Clarity Financials is the cost-accounting layer — cost/rate matrices, financial properties, financial plans, transactions, WIP, and chargebacks — that turns project activity into dollars.",
+ why:"Portfolio decisions ultimately come down to cost and value. Financials gives PMOs and Finance a consistent way to rate labor/materials/equipment/expenses, track actuals against plan, and — in shared-services organizations — bill internal departments for work performed.",
+ when:"Use it whenever a project needs budgeted-vs-actual cost tracking, whenever resource/role costing needs standardizing across the portfolio, or whenever one department's work needs to be charged back to another.",
+ useCase:"A shared IT services team does work for multiple business units. Finance builds a cost/rate matrix defining labor rates by role, resources log time against projects, WIP transactions accumulate those costs, and a monthly chargeback job bills each business unit's cost center for the work its projects consumed.",
+ definitions:[
+   {t:"Cost/Rate Matrix", d:"A set of rules matching rates and costs to transactions based on general properties and matching columns; matrices exist for labor, materials, equipment, and expense types."},
+   {t:"Matrix precedence", d:"Clarity applies matrices first at the investment level, then entity level, then system level — most specific wins."},
+   {t:"WIP (Work-in-Progress)", d:"Unposted/unbilled transaction costs accumulated before formal posting."},
+   {t:"Chargeback", d:"The process of billing internal departments/cost centers for work performed on their behalf."}
+ ],
+ explanation:"Financial transactions can originate from three places — timesheets, manual transaction entry, or import from an external system — and all three flow through the same WIP → posting → (optionally) chargeback pipeline. Understanding that pipeline order matters more than memorizing any single screen, since exam scenarios tend to describe a transaction's origin and ask what happens to it next.",
+ facts:[],
+ rights:[],
+ checklist:[
+   "Read the doc; memorize the order of operations: classifications → cost rate matrix → financial properties → financial plan → transactions.",
+   "Build a cost rate matrix and define financial properties for a resource and a role.",
+   "Create a financial plan and a transaction entry; run a job and view posted vs. unposted transactions.",
+   "Process a WIP transaction, then set up and process a chargeback."
+ ]},
+
+{id:"reports", day:5, title:"Working with Reports", priority:"low", score:"Was 80%", hours:"1.5h", type:"concept",
+ doc:"Working with Reporting — techdocs.broadcom.com/ppm",
+ what:"The Reporting workspace lets you build a Data Provider — a governed, reusable data query with filters, joins, and security — and then design reports against it in Report Designer.",
+ why:"Rather than every report author writing raw SQL, Data Providers give a controlled, reusable, security-aware layer so reports stay consistent and safe to share widely.",
+ when:"Use it whenever you need a new reusable data source for reporting, or when an existing report is missing data and you need to diagnose the underlying Data Provider configuration.",
+ useCase:"A resource manager wants a report showing each resource's allocation over the next 6 months, time-phased by month. They copy the out-of-the-box \"Investments\" Data Provider and adjust its filters/joins, but the preview shows blank time-scaled columns — because the Include SQL Curve Data flag under System Options wasn't enabled for that provider.",
+ definitions:[
+   {t:"Data Provider", d:"A governed, reusable query definition (filters, joins, security) that reports are built against."},
+   {t:"Preview", d:"A Data Provider testing feature that shows sample output and the underlying generated SQL before publishing."},
+   {t:"Time-scaled / curve data", d:"Allocation or cost values spread across a date range (e.g. monthly allocation curves) rather than a single flat value."},
+   {t:"Report Designer", d:"The tool used to lay out and format a report against a published Data Provider."}
+ ],
+ explanation:"You can copy an out-of-the-box Data Provider (like \"Investments\") as a starting point instead of building from scratch — faster and safer, since the base security and joins are already correct and you only adjust what's different.",
+ facts:["Missing time-scaled allocation values in a Data Provider preview → check the <b>Include SQL Curve Data</b> flag under System Options (Sample Q10 answer: B)."],
+ rights:[],
+ checklist:[
+   "Create a Data Provider with time-scaled allocation values.",
+   "If values don't appear in preview, find and enable Include SQL Curve Data under System Options.",
+   "Build one report in Report Designer end-to-end.",
+   "Redo Sample Question 10 without looking at the answer."
+ ]},
+
+{id:"feature-toggles", day:5, title:"Feature Toggles", priority:"low", score:"Was 100%", hours:"0.5h", type:"concept",
+ doc:"Working with Feature Toggles — techdocs.broadcom.com/ppm",
+ what:"Feature Toggles let admins turn upcoming/optional features on or off before they become standard, either via the UI grid or command prompt.",
+ why:"This decouples \"the code is deployed\" from \"the feature is visible,\" giving organizations control over staged rollouts and change management instead of a feature appearing for everyone the moment it ships.",
+ when:"Use it when adopting a new capability ahead of its mandatory release, or when temporarily disabling a feature during a transition or training period.",
+ useCase:"A new feature ships as toggleable in 16.3 with \"Expires In Release: 16.4.\" The PMO leaves it off in 16.3 to finish training materials first, then deliberately turns it on before the 16.4 upgrade to let users adjust early — knowing that once 16.4 lands, the toggle disappears entirely and the feature is simply on for everyone.",
+ definitions:[
+   {t:"Expires In Release", d:"The release version at which a toggleable feature becomes a permanent standard feature."},
+   {t:"Standard feature", d:"A feature no longer toggleable — always on, with its entry automatically removed from the Feature Toggles grid."},
+   {t:"Command prompt toggle", d:"An alternate way to enable/disable a feature outside the UI grid."}
+ ],
+ explanation:"You already scored 100% here — the one nuance worth double-checking is that upgrading past the Expires In Release version doesn't just leave the toggle in its last state, it removes the toggle option entirely and promotes the feature to standard automatically.",
+ facts:["When a toggle's Expires In Release version is reached, the feature becomes a <b>standard, non-toggleable</b> feature — it is not disabled and doesn't need reactivation (Sample Q4 answer: C)."],
+ rights:[],
+ checklist:[
+   "Quick pass: enable/disable a feature via UI and via command prompt.",
+   "Redo Sample Question 4 without looking at the answer."
+ ]},
+
+{id:"access-rights-review", day:5, title:"Access-Rights Master Review", priority:"priority", score:null, hours:"1.5h", type:"activity",
+ doc:null,
+ purpose:"You flagged access rights as a core weak spot across every section — this is a dedicated cross-module drill to close that gap before the simulation day.",
+ steps:[
+   "For Hierarchies, Roadmaps, Blueprints, OBS, Staffing, Plans, and Processes, write 2-3 access rights each and exactly what each one unlocks.",
+   "Circle the rights that sound similar but do different things — e.g. Hierarchy – Edit vs. Manage Metrics, Roadmap – Navigate vs. Author — these are the exam's favorite trap.",
+   "Test yourself: cover the notes, say each right and its function out loud from memory.",
+   "Note anywhere Field-Level Security or group-based Actions Framework restrictions could override an object-level right — that layered-security pattern shows up across multiple modules."
+ ],
+ checklist:[
+   "Build the one-page access-rights reference sheet.",
+   "Self-test out loud without looking at notes.",
+   "Flag any right you're still unsure of and re-read its doc section."
+ ]},
+
+{id:"practice-exam", day:6, title:"Timed Practice Exam", priority:null, score:null, hours:"2.0h", type:"activity",
+ doc:null,
+ purpose:"Simulate real exam conditions before triaging anything — closed-book, timed, no notes.",
+ steps:[
+   "Closed-book, timed, no notes — treat it exactly like the real proctored exam.",
+   "Use the 10 sample questions from the study guide plus additional questions you write yourself from each topic page's key facts.",
+   "Don't check answers until the full run is complete."
+ ],
+ checklist:[
+   "Run the full timed simulation without stopping.",
+   "Record your answers before checking any of them."
+ ]},
+
+{id:"triage", day:6, title:"Score & Triage", priority:null, score:null, hours:"2.0h", type:"activity",
+ doc:null,
+ purpose:"Turn every miss into a targeted fix instead of a vague feeling of \"I should know this.\"",
+ steps:[
+   "Score yourself and list every miss by module.",
+   "For each miss, go back to that topic's page and redo the related hands-on step in Clarity.",
+   "Update your access-rights notes for anything you got wrong."
+ ],
+ checklist:[
+   "Score the practice exam and list misses by module.",
+   "Revisit each missed topic's page and redo the hands-on step.",
+   "Update the access-rights reference sheet with corrections."
+ ]},
+
+{id:"procedure-drill", day:6, title:"Rapid-Fire Procedure Drill", priority:null, score:null, hours:"2.0h", type:"activity",
+ doc:null,
+ purpose:"Say the exact click-path out loud, start to finish, for the highest-value procedures — no hesitation.",
+ steps:[
+   "Create a hierarchy and add a custom metric.",
+   "Create a roadmap, import CSV items, link to an investment.",
+   "Add a Blueprint Business Rule with a Security Update action.",
+   "Set Authorized File Extensions in General System Settings.",
+   "Change an Autoschedule load pattern.",
+   "Associate an OBS with an object type and assign a unit.",
+   "Publish a plan and confirm it's read-only.",
+   "Set up and process a chargeback.",
+   "Enable Include SQL Curve Data for a time-scaled Data Provider.",
+   "Share a view with all users vs. share a staffing scenario with a group."
+ ],
+ checklist:[
+   "Drill all 10 procedures out loud from memory, timing yourself.",
+   "Re-drill any procedure you hesitated on."
+ ]},
+];
+
+TOPICS.push({id:"exam-tips", day:null, title:"Exam-Day Tips", priority:null, score:null, hours:null, type:"tips"});
+
+/* score report data, sorted worst → best, used for the priority chart */
+const SCORE_MAP = [
+  {label:"Hierarchies", pct:25, topic:"hierarchies"},
+  {label:"Roadmaps", pct:25, topic:"roadmaps"},
+  {label:"Tasks", pct:29, topic:"tasks"},
+  {label:"Blueprints", pct:43, topic:"blueprints"},
+  {label:"Staffing", pct:43, topic:"staffing"},
+  {label:"OBS", pct:50, topic:"obs"},
+  {label:"Default Project Settings", pct:50, topic:"default-settings"},
+  {label:"Financials", pct:57, topic:"financials"},
+  {label:"General System Settings", pct:60, topic:"general-settings"},
+  {label:"Processes", pct:60, topic:"processes"},
+  {label:"Plans", pct:67, topic:"plans"},
+  {label:"Actions Framework", pct:67, topic:"actions-framework"},
+  {label:"Reports", pct:80, topic:"reports"},
+  {label:"Feature Toggles", pct:100, topic:"feature-toggles"}
+].sort((a,b)=>a.pct-b.pct);
+
+/* flashcards: every verified exam fact, auto-collected from topics */
+const FLASHCARDS = [];
+TOPICS.forEach(t=>{
+  if(t.type==="concept" && t.facts && t.facts.length){
+    t.facts.forEach(f=> FLASHCARDS.push({topicId:t.id, topicTitle:t.title, text:f}));
+  }
+});
+let flashOrder = FLASHCARDS.map((_,i)=>i);
+let flashPos = 0;
+
+/* ============================= STATE ============================= */
+const priorityLabel = {critical:"Critical", high:"High", medium:"Medium", low:"Low", priority:"Priority"};
+let activeFilters = new Set();   // priority filters (multi-select)
+let activeDayFilter = null;      // single day filter, null = all
+let searchQuery = "";
+
+/* ============================= HELPERS ============================= */
+function allChecklistIds(){
+  const ids = [];
+  TOPICS.forEach(t=>{ if(t.checklist){ t.checklist.forEach((_,i)=> ids.push(t.id+"__"+i)); } });
+  return ids;
+}
+function isChecked(id){ return localStorage.getItem("cl_"+id) === "1"; }
+function setChecked(id, val){ localStorage.setItem("cl_"+id, val ? "1":"0"); }
+
+function topicProgress(t){
+  if(!t.checklist || !t.checklist.length) return 0;
+  let done = 0;
+  t.checklist.forEach((_,i)=>{ if(isChecked(t.id+"__"+i)) done++; });
+  return Math.round((done/t.checklist.length)*100);
+}
+function dayStats(dayId){
+  const topics = TOPICS.filter(t=>t.day===dayId);
+  let total=0, done=0;
+  topics.forEach(t=>{ if(t.checklist){ total+=t.checklist.length; t.checklist.forEach((_,i)=>{ if(isChecked(t.id+"__"+i)) done++; }); }});
+  return {pct: total?Math.round((done/total)*100):0, done, total};
+}
+function hourStats(){
+  let totalHours=0, doneHours=0;
+  TOPICS.forEach(t=>{
+    if(!t.checklist || !t.checklist.length || !t.hours) return;
+    const h = parseFloat(t.hours);
+    totalHours += h;
+    doneHours += h * (topicProgress(t)/100);
+  });
+  return {totalHours, doneHours};
+}
+function overallProgress(){
+  const {totalHours, doneHours} = hourStats();
+  return totalHours ? Math.round((doneHours/totalHours)*100) : 0;
+}
+function badgeClass(p){
+  if(p==="critical") return "b-critical";
+  if(p==="high") return "b-high";
+  if(p==="medium") return "b-medium";
+  if(p==="low") return "b-low";
+  if(p==="priority") return "b-priority";
+  return "";
+}
+function iconStyle(t){
+  const map = {
+    critical:{bg:"#3a1620", fg:"#f87171"},
+    high:{bg:"#3a2810", fg:"#fbbf24"},
+    medium:{bg:"#39380f", fg:"#fde047"},
+    low:{bg:"#123a26", fg:"#4ade80"},
+    priority:{bg:"#1c1440", fg:"#a78bfa"}
+  };
+  const key = t.priority || (t.type==="activity" ? "priority" : "low");
+  return map[key] || {bg:"#132033", fg:"#60a5fa"};
+}
+function scoreColor(pct){
+  if(pct<40) return "var(--red)";
+  if(pct<60) return "var(--amber)";
+  if(pct<70) return "var(--yellow)";
+  return "var(--green)";
+}
+
+/* ---- plan day-tracker ---- */
+function getStartDate(){
+  let s = localStorage.getItem('plan_start');
+  if(!s){ s = new Date().toISOString().slice(0,10); localStorage.setItem('plan_start', s); }
+  return s;
+}
+function resetStartDate(){ localStorage.setItem('plan_start', new Date().toISOString().slice(0,10)); render(); }
+function dayIndexToday(){
+  const start = new Date(getStartDate()+"T00:00:00");
+  const today = new Date(); today.setHours(0,0,0,0);
+  return Math.round((today-start)/86400000)+1;
+}
+function dateForDay(dayNum){
+  const start = new Date(getStartDate()+"T00:00:00");
+  const d = new Date(start.getTime() + (dayNum-1)*86400000);
+  return d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+}
+function dayStatusText(){
+  const idx = dayIndexToday();
+  if(idx<1) return "Not started yet";
+  if(idx>6) return "Exam day — go!";
+  return "Day "+idx+" of 6";
+}
+function clampedTodayDay(){ return Math.min(Math.max(dayIndexToday(),1),6); }
+
+/* ============================= RENDER: DASHBOARD ============================= */
+function renderBanner(){
+  const {totalHours, doneHours} = hourStats();
+  const allIds = allChecklistIds();
+  const doneCount = allIds.filter(isChecked).length;
+  const remaining = allIds.length - doneCount;
+  const pct = overallProgress();
+  document.getElementById('bannerStreakNum').textContent = clampedTodayDay();
+  document.getElementById('bannerTitle').textContent = dayStatusText();
+  document.getElementById('bannerSub').textContent = doneCount+" of "+allIds.length+" items done · "+remaining+" remaining · "+doneHours.toFixed(1)+"h / "+totalHours+"h studied";
+  document.getElementById('bannerFill').style.width = pct+"%";
+  const last = localStorage.getItem('last_topic');
+  const lt = last ? TOPICS.find(x=>x.id===last) : null;
+  document.getElementById('bannerCta').innerHTML = lt && lt.type!=="tips" ? "▶ Resume "+lt.title : "▶ Start studying";
+}
+function continueStudying(){
+  const last = localStorage.getItem('last_topic');
+  const lt = last ? TOPICS.find(x=>x.id===last) : null;
+  if(lt && lt.type!=="tips" && topicProgress(lt)<100){ go('topic', lt.id); return; }
+  go('topic', todayFocusTopic().id);
+}
+function todayFocusTopic(){
+  const d = clampedTodayDay();
+  const topics = TOPICS.filter(t=>t.day===d && t.checklist && t.checklist.length);
+  return topics.find(t=> topicProgress(t)<100) || topics[0] || TOPICS[0];
+}
+function weakSpots(){ return TOPICS.filter(t=>t.priority==="critical" && topicProgress(t)<100); }
+function neverStarted(){ return TOPICS.find(t=> t.checklist && t.checklist.length && topicProgress(t)===0); }
+
+function renderStats(){
+  const {totalHours} = hourStats();
+  const conceptCount = TOPICS.filter(t=>t.type==="concept").length;
+  const el = document.getElementById('statsRow');
+  el.innerHTML = `
+    <div class="stat2"><div class="icon" style="background:#0f2b2a;color:var(--teal);">📘</div><div class="n">${conceptCount}</div><div class="l">Study Topics</div></div>
+    <div class="stat2"><div class="icon" style="background:#0d1f33;color:var(--blue);">🗂️</div><div class="n">${allChecklistIds().length}</div><div class="l">Checklist Items</div></div>
+    <div class="stat2"><div class="icon" style="background:#241a08;color:var(--amber);">⏱️</div><div class="n">${totalHours}h</div><div class="l">Study Hours</div></div>
+    <div class="stat2"><div class="icon" style="background:#1c1440;color:var(--purple);">🎯</div><div class="n">51%</div><div class="l">Last Score</div></div>
+  `;
+}
+
+function renderTodayCards(){
+  const el = document.getElementById('todayGrid');
+  const focus = todayFocusTopic();
+  const fStats = dayStats(clampedTodayDay());
+  const weak = weakSpots();
+  const never = neverStarted();
+
+  el.innerHTML = `
+    <div class="today-card">
+      <div class="ticon">📄</div>
+      <b>${fStats.total-fStats.done} items left today</b>
+      <p>In Day ${clampedTodayDay()} — ${DAYS[clampedTodayDay()-1].title}, ${fStats.total-fStats.done} checklist item${fStats.total-fStats.done===1?'':'s'} remain.</p>
+      <button class="go" onclick="go('topic','${focus.id}')">Continue day →</button>
+    </div>
+    <div class="today-card amber">
+      <div class="ticon amber">⚡</div>
+      <b>${weak.length} critical topic${weak.length===1?'':'s'} left</b>
+      <p>${weak.length ? "Your lowest-scoring topics: "+weak.map(t=>t.title).join(", ")+"." : "All critical-priority topics are fully checked off — nice work."}</p>
+      <button class="go" onclick="drillCritical()">Drill critical →</button>
+    </div>
+    <div class="today-card blue">
+      <div class="ticon blue">▶</div>
+      <b>${never ? "Not started yet" : "Everything started"}</b>
+      <p>${never ? never.title+" has no progress yet — read through it for a baseline." : "Every topic has at least some progress logged."}</p>
+      <button class="go" onclick="${never ? "go('topic','"+never.id+"')" : "goScoreChart()"}">${never ? "Start it →" : "Review scores →"}</button>
+    </div>
+  `;
+}
+function drillCritical(){
+  activeFilters = new Set(["critical"]);
+  activeDayFilter = null;
+  renderFilterChips();
+  renderTopicsGrid();
+  document.getElementById('topicsGrid').scrollIntoView({behavior:"smooth", block:"start"});
+}
+function goScoreChart(){
+  go('dashboard');
+  setTimeout(()=> document.getElementById('scoreChartSec').scrollIntoView({behavior:"smooth", block:"start"}), 30);
+}
+
+function renderFilterChips(){
+  const dayEl = document.getElementById('dayFilterRow');
+  dayEl.innerHTML = `<span class="flabel">Day</span>` +
+    `<button class="chip ${activeDayFilter===null?'active':''}" onclick="setDayFilter(null)">All</button>` +
+    DAYS.map(d=>`<button class="chip ${activeDayFilter===d.id?'active':''}" onclick="setDayFilter(${d.id})">Day ${d.id}</button>`).join("");
+
+  const pEl = document.getElementById('priorityFilterRow');
+  const opts = ["critical","high","medium","low"];
+  pEl.innerHTML = `<span class="flabel">Priority</span>` +
+    opts.map(p=>`<button class="chip ${activeFilters.has(p)?'active':''}" onclick="togglePriorityFilter('${p}')">${priorityLabel[p]}</button>`).join("") +
+    (activeFilters.size ? `<button class="chip clear" onclick="clearFilters()">✕ Clear</button>` : "");
+}
+function setDayFilter(d){ activeDayFilter = (activeDayFilter===d) ? null : d; renderFilterChips(); renderTopicsGrid(); }
+function togglePriorityFilter(p){
+  if(activeFilters.has(p)) activeFilters.delete(p); else activeFilters.add(p);
+  renderFilterChips(); renderTopicsGrid();
+}
+function clearFilters(){ activeFilters.clear(); activeDayFilter=null; renderFilterChips(); renderTopicsGrid(); }
+
+function renderTopicsGrid(){
+  const all = TOPICS.filter(t=>t.type!=="tips");
+  document.getElementById('topicCount').textContent = all.length+" total";
+  const list = all
+    .filter(t=> activeDayFilter===null || t.day===activeDayFilter)
+    .filter(t=> activeFilters.size===0 || !t.priority || activeFilters.has(t.priority))
+    .filter(t=> !searchQuery || t.title.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  const el = document.getElementById('topicsGrid');
+  if(!list.length){ el.innerHTML = `<div class="tcard-empty">No topics match the current filters/search.</div>`; return; }
+
+  el.innerHTML = list.map(t=>{
+    const pct = topicProgress(t);
+    const style = iconStyle(t);
+    const icon = t.type==="activity" ? "⚡" : "📘";
+    return `
+      <div class="tcard" onclick="go('topic','${t.id}')">
+        <div class="tcard-top">
+          <div class="tcard-icon" style="background:${style.bg};color:${style.fg};">${icon}</div>
+          <div style="flex:1;min-width:0;">
+            <div class="tcard-title">${t.title}</div>
+            <div class="tcard-sub">Day ${t.day} · ${t.hours}</div>
+          </div>
+        </div>
+        <div class="tcard-tags">
+          ${t.priority ? `<span class="tag" style="background:${style.bg};color:${style.fg};">${priorityLabel[t.priority]}</span>` : ""}
+          ${t.score ? `<span class="tag">${t.score}</span>` : ""}
+        </div>
+        <div>
+          <div class="tcard-progress-row"><span>Progress</span><span>${pct}%</span></div>
+          <div class="tcard-bar"><div class="fill" style="width:${pct}%"></div></div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderScoreChart(){
+  const el = document.getElementById('scoreChart');
+  el.innerHTML = `<div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--sub2);font-weight:800;margin-bottom:12px;">Sorted worst to best — click a bar to open that topic</div>` +
+    SCORE_MAP.map(s=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:7px 0;cursor:pointer;" onclick="go('topic','${s.topic}')" onmouseover="this.style.background='#0f1626'" onmouseout="this.style.background='transparent'">
+      <div style="width:190px;font-size:12.5px;color:var(--sub);flex-shrink:0;">${s.label}</div>
+      <div style="flex:1;height:15px;background:#1c2438;border-radius:5px;position:relative;">
+        <div style="height:100%;border-radius:5px;width:${s.pct}%;background:${scoreColor(s.pct)};"></div>
+        <div style="position:absolute;top:-3px;bottom:-3px;left:70%;width:2px;background:#fff;opacity:.55;"></div>
+      </div>
+      <div style="width:38px;text-align:right;font-size:12px;font-weight:800;color:${scoreColor(s.pct)};">${s.pct}%</div>
+    </div>
+  `).join("");
+}
+
+/* ============================= RENDER: TOPIC PAGE ============================= */
+function renderChecklist(t){
+  if(!t.checklist || !t.checklist.length) return "";
+  const items = t.checklist.map((text,i)=>{
+    const id = t.id+"__"+i;
+    const checked = isChecked(id) ? "checked" : "";
+    return `<li><input type="checkbox" id="cb_${id}" ${checked} onchange="onCheck('${id}')"><label for="cb_${id}">${text}</label></li>`;
+  }).join("");
+  return `<div class="sec"><h3>✅ Hands-On Checklist</h3><ul class="checklist">${items}</ul></div>`;
+}
+function renderConceptTopic(t){
+  const defs = t.definitions.map(d=>`<div class="defitem"><b>${d.t}</b><span>${d.d}</span></div>`).join("");
+  const facts = t.facts.map(f=>`<div class="fact"><b>Exam fact:</b> ${f}</div>`).join("");
+  const rights = t.rights.length ? `<div class="sec"><h3>🔑 Access Rights</h3><div class="rights">${t.rights.map(r=>`<span class="right-chip">${r}</span>`).join("")}</div></div>` : "";
+  return `
+    <div class="topic-head">
+      <h1>${t.title}</h1>
+      <div class="badges">
+        ${t.priority ? `<span class="badge ${badgeClass(t.priority)}">${priorityLabel[t.priority]} priority</span>` : ""}
+        ${t.score ? `<span class="badge" style="background:#1c2438;color:#cfd8ea;">${t.score}</span>` : ""}
+      </div>
+    </div>
+    ${t.doc ? `<div class="topic-doc">📄 ${t.doc}</div>` : ""}
+    <div class="sec"><h3>What</h3><p>${t.what}</p></div>
+    <div class="sec"><h3>Why</h3><p>${t.why}</p></div>
+    <div class="sec"><h3>When</h3><p>${t.when}</p></div>
+    <div class="sec usecase"><h3>Real Use Case</h3><p>${t.useCase}</p></div>
+    <div class="sec"><h3>Key Definitions</h3><div class="defgrid">${defs}</div></div>
+    <div class="sec explain"><h3>Deeper Explanation</h3><p>${t.explanation}</p></div>
+    ${facts ? `<div class="sec">${facts}</div>` : ""}
+    ${rights}
+    ${renderChecklist(t)}
+  `;
+}
+function renderActivityTopic(t){
+  const steps = t.steps.map(s=>`<li>${s}</li>`).join("");
+  return `
+    <div class="topic-head">
+      <h1>${t.title}</h1>
+      <div class="badges">
+        ${t.priority ? `<span class="badge ${badgeClass(t.priority)}">${priorityLabel[t.priority]}</span>` : ""}
+        ${t.hours ? `<span class="badge" style="background:#1c2438;color:#cfd8ea;">${t.hours}</span>` : ""}
+      </div>
+    </div>
+    <div class="sec"><h3>Purpose</h3><p>${t.purpose}</p></div>
+    <div class="sec"><h3>How</h3><ol class="steps">${steps}</ol></div>
+    ${renderChecklist(t)}
+  `;
+}
+function renderTipsTopic(){
+  return `
+    <div class="topic-head"><h1>Exam-Day Tips</h1></div>
+    <div class="final-box">
+      <h3>Walk in ready</h3>
+      <ul>
+        <li><b>Read every question twice</b> — especially ones asking "which access right specifically" or "which option enables" — these test exact terminology, not general understanding.</li>
+        <li><b>Distrust plausible-sounding options</b> that aren't real Clarity features (e.g. "Project Manager Role Configuration," "Automatic Rights Assignment") — the exam builds distractors that sound reasonable but don't exist in the product.</li>
+        <li><b>Flag and move on</b> if unsure — don't burn time on one question early.</li>
+        <li>Exam is <b>closed-book</b>: no printed material, computers, or calculators. You'll get an <b>immediate provisional score</b> on screen at the end.</li>
+        <li>You already have the hands-on skill — this week closes the terminology and business-rationale gap, not a skills gap.</li>
+        <li><b>No plan guarantees a pass.</b> What closes the gap is actually redoing the hands-on steps and access-rights drills, not just reading them.</li>
+      </ul>
+    </div>
+  `;
+}
+function renderTopicPage(id){
+  const t = TOPICS.find(x=>x.id===id);
+  const container = document.getElementById('view-topic');
+  let html = `<div class="crumb"><button onclick="go('dashboard')">← Dashboard</button><span>/</span><span>${t.title}</span></div>`;
+  if(t.type==="concept") html += renderConceptTopic(t);
+  else if(t.type==="activity") html += renderActivityTopic(t);
+  else if(t.type==="tips") html += renderTipsTopic();
+  container.innerHTML = html;
+  if(t.type!=="tips") localStorage.setItem('last_topic', id);
+}
+function onCheck(id){
+  const cb = document.getElementById('cb_'+id);
+  setChecked(id, cb.checked);
+}
+
+/* ============================= FLASHCARDS ============================= */
+function shuffleFlash(){
+  for(let i=flashOrder.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [flashOrder[i],flashOrder[j]]=[flashOrder[j],flashOrder[i]]; }
+  flashPos=0; renderFlashView();
+}
+function flashNext(){ flashPos=(flashPos+1)%flashOrder.length; renderFlashView(); }
+function flashPrev(){ flashPos=(flashPos-1+flashOrder.length)%flashOrder.length; renderFlashView(); }
+function renderFlashView(){
+  const container = document.getElementById('view-flashcards');
+  if(!FLASHCARDS.length){ container.innerHTML = `<div class="crumb"><button onclick="go('dashboard')">← Dashboard</button></div><p>No flashcards yet.</p>`; return; }
+  const card = FLASHCARDS[flashOrder[flashPos]];
+  container.innerHTML = `
+    <div class="crumb"><button onclick="go('dashboard')">← Dashboard</button><span>/</span><span>Flashcards</span></div>
+    <div class="flash-wrap">
+      <div class="flash-card">
+        <div class="flash-topic">${card.topicTitle}</div>
+        <div class="flash-fact">${card.text}</div>
+      </div>
+      <div class="flash-controls">
+        <button class="navbtn" onclick="flashPrev()">← Prev</button>
+        <button class="navbtn" onclick="shuffleFlash()">🔀 Shuffle</button>
+        <button class="navbtn primary" onclick="flashNext()">Next →</button>
+      </div>
+      <div class="flash-counter">${flashPos+1} / ${flashOrder.length} · <a onclick="go('topic','${card.topicId}')">View full topic</a></div>
+    </div>
+  `;
+}
+
+/* ============================= ROUTER ============================= */
+function go(view, id){
+  if(view==="dashboard") location.hash = "#dashboard";
+  else if(view==="flashcards") location.hash = "#flashcards";
+  else location.hash = "#topic/"+id;
+}
+function updateSidebarActive(hash){
+  document.querySelectorAll('.sidebar .sidebtn').forEach(b=>b.classList.remove('active'));
+  if(hash==="#flashcards") document.getElementById('nav-flashcards').classList.add('active');
+  else if(hash==="#topic/exam-tips") document.getElementById('nav-tips').classList.add('active');
+  else document.getElementById('nav-dashboard').classList.add('active');
+}
+function render(){
+  const hash = location.hash || "#dashboard";
+  const dash = document.getElementById('view-dashboard');
+  const top = document.getElementById('view-topic');
+  const flash = document.getElementById('view-flashcards');
+  dash.style.display = "none"; top.style.display = "none"; flash.style.display = "none";
+
+  if(hash.startsWith("#topic/")){
+    top.style.display = "block";
+    renderTopicPage(hash.replace("#topic/",""));
+  } else if(hash==="#flashcards"){
+    flash.style.display = "block";
+    renderFlashView();
+  } else {
+    dash.style.display = "block";
+    renderBanner();
+    renderStats();
+    renderTodayCards();
+    renderFilterChips();
+    renderTopicsGrid();
+    renderScoreChart();
+  }
+  updateSidebarActive(hash);
+  window.scrollTo({top:0,behavior:"instant"});
+}
+window.addEventListener('hashchange', render);
+
+/* search */
+const searchEl = document.getElementById('searchInput');
+searchEl.addEventListener('input', e=>{
+  searchQuery = e.target.value;
+  if(location.hash && location.hash!=="#dashboard"){ location.hash="#dashboard"; }
+  renderTopicsGrid();
+});
+window.addEventListener('keydown', e=>{
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="k"){ e.preventDefault(); searchEl.focus(); }
+});
+
+render();
+</script>
+</body>
+</html>

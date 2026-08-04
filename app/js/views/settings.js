@@ -41,13 +41,15 @@ App.views = App.views || {};
     const u = App.u, store = App.store, br = App.branding;
     const s = store.state.settings;
 
+    const acc = store.getAccount();
+
     root.innerHTML =
       '<div class="view" style="max-width:820px;margin:0 auto">' +
 
       /* ---- user profile ---- */
       '<section class="card card-pad rise settings-card">' +
       '<div class="set-head"><div class="set-ico">' + App.icon("user", 17) + "</div>" +
-      "<div><h3>User Profile</h3><p>Your name, role and picture — shown in the sidebar and browser tab.</p></div></div>" +
+      "<div><h3>User Profile</h3><p>Your name, role, picture and Google account — shown in the sidebar and browser tab.</p></div></div>" +
 
       '<div class="profile-head">' +
       '<span class="avatar-ring">' +
@@ -56,9 +58,14 @@ App.views = App.views || {};
       '<div style="min-width:0">' +
       '<div class="bp-name" id="set-preview-name">' + u.esc(br.name()) + "</div>" +
       '<div class="bp-sub" id="set-preview-sub" style="display:' + (br.tagline() ? "" : "none") + '">' + App.icon("briefcase", 12, 2.4) + '<span id="set-preview-sub-txt">' + u.esc(br.tagline()) + "</span></div>" +
+      (acc
+        ? '<div class="bp-account">' + App.icon("shield", 12, 2.4) + "<span>" + u.esc(acc.email) + "</span>" +
+          '<span class="beta-badge">Google · Beta</span></div>'
+        : "") +
       '<div class="profile-actions">' +
       '<button class="btn btn-ghost btn-sm" id="set-upload">' + App.icon("upload", 13) + "Change picture</button>" +
       (br.isCustom() ? '<button class="btn btn-ghost btn-sm" id="set-logo-reset">' + App.icon("trash", 13) + "Remove</button>" : "") +
+      (acc ? '<button class="btn btn-ghost btn-sm" id="set-signout">' + App.icon("x", 13) + "Sign out</button>" : "") +
       '<input type="file" id="set-file" accept="image/png,image/jpeg,image/svg+xml,image/webp,image/gif" style="display:none">' +
       "</div></div></div>" +
 
@@ -358,6 +365,16 @@ App.views = App.views || {};
   function wire(wrap) {
     const store = App.store, br = App.branding, ui = App.ui, u = App.u;
 
+    /* account */
+    const signoutBtn = wrap.querySelector("#set-signout");
+    if (signoutBtn) signoutBtn.onclick = function () {
+      ui.confirm({
+        title: "Sign out?",
+        desc: "You'll need to sign in again with Google (Beta) to get back into ExamPro. Nothing stored on this device is deleted.",
+        confirmLabel: "Sign out"
+      }, function () { App.auth.signOut(); });
+    };
+
     /* keep the whole app in sync, not just this page */
     function applied() {
       br.apply();
@@ -598,7 +615,7 @@ App.views = App.views || {};
         store.state.groups = {};
         store.state.activity = {};
         store.state.dueDates = {};
-        store.state.settings = { theme: "light", accent: "indigo", sidebarCollapsed: false, dailyGoal: 20, sidebarLinks: [] };
+        store.state.settings = { theme: "light", accent: "indigo", sidebarCollapsed: false, dailyGoal: 20, sidebarLinks: [], account: null };
         store.saveGroups();
         store.saveActivity();
         store.saveDueDates();
@@ -609,6 +626,7 @@ App.views = App.views || {};
         applied();
         ui.toast("Everything reset.", "info");
         App.router.go("#/dashboard");
+        App.auth.showGate();
       });
     };
   }

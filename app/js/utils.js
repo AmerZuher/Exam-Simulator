@@ -134,11 +134,58 @@ window.App = window.App || {};
     });
   };
 
+  /* Some exported images (app-icon-style PNGs especially) carry transparent
+     padding around the real artwork. Left alone, that padding survives
+     every later crop untouched — object-fit only ever crops an image's
+     rectangular *bounds*, never what's transparent inside them — and shows
+     through as an empty ring wherever the image is displayed on a colour.
+     Scan a downscaled copy for the bounding box of non-transparent pixels
+     so the caller can crop to the real artwork instead. Returns null if
+     the image has no meaningful transparent margin (nothing to trim) or
+     can't be read (e.g. a tainted canvas). */
+  function opaqueBounds(img) {
+    const MAX_SCAN = 300;                 // downscaled purely for a fast pixel scan
+    const scale = Math.min(1, MAX_SCAN / Math.max(img.width, img.height));
+    const sw = Math.max(1, Math.round(img.width * scale));
+    const sh = Math.max(1, Math.round(img.height * scale));
+    const c = document.createElement("canvas");
+    c.width = sw; c.height = sh;
+    const cx = c.getContext("2d");
+    if (!cx) return null;
+    cx.drawImage(img, 0, 0, sw, sh);
+    let data;
+    try { data = cx.getImageData(0, 0, sw, sh).data; } catch (e) { return null; }
+
+    const ALPHA_THRESHOLD = 10;
+    let minX = sw, minY = sh, maxX = -1, maxY = -1;
+    for (let y = 0; y < sh; y++) {
+      for (let x = 0; x < sw; x++) {
+        if (data[(y * sw + x) * 4 + 3] > ALPHA_THRESHOLD) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (maxX < 0) return null;            // fully transparent — nothing to crop to
+
+    const back = 1 / scale;
+    const x = Math.floor(minX * back), y = Math.floor(minY * back);
+    const w = Math.min(img.width - x, Math.ceil((maxX - minX + 1) * back));
+    const h = Math.min(img.height - y, Math.ceil((maxY - minY + 1) * back));
+    /* a barely-smaller box is just anti-aliasing fuzz at the true edges,
+       not real padding — only trim when it actually buys something */
+    if (w > img.width * 0.98 && h > img.height * 0.98) return null;
+    return { x: x, y: y, w: w, h: h };
+  }
+
   /* Reads a user-picked image into a storable data URI — shared by the app
      branding picker and any per-bank logo picker so both get the same
      validation and don't blow up localStorage. Small SVGs stay vector;
-     everything else is drawn onto a square canvas (cover-cropped, no
-     letterboxing) so the stored size stays small and predictable. */
+     everything else is trimmed to its opaque content (see opaqueBounds)
+     and drawn onto a square canvas (cover-cropped, no letterboxing) so the
+     stored size stays small and predictable. */
   U.readImageFile = function (file, opts, done, fail) {
     opts = opts || {};
     const maxBytes = opts.maxBytes || 4 * 1024 * 1024;
@@ -167,10 +214,11 @@ window.App = window.App || {};
           canvas.width = canvas.height = size;
           const ctx = canvas.getContext("2d");
           if (!ctx) return done(String(reader.result));
-          const scale = Math.max(size / img.width, size / img.height);
-          const w = Math.round(img.width * scale);
-          const h = Math.round(img.height * scale);
-          ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+          const rect = opaqueBounds(img) || { x: 0, y: 0, w: img.width, h: img.height };
+          const scale = Math.max(size / rect.w, size / rect.h);
+          const w = Math.round(rect.w * scale);
+          const h = Math.round(rect.h * scale);
+          ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h, (size - w) / 2, (size - h) / 2, w, h);
           done(canvas.toDataURL("image/png"));
         } catch (e) {
           fail("Could not process that image.");

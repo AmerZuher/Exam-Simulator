@@ -389,6 +389,7 @@ window.App = window.App || {};
     /* global keyboard shortcuts */
     document.addEventListener("keydown", function (e) {
       /* the palette is reachable from anywhere, including inside inputs */
+      if (document.getElementById("auth-gate")) return;   // sign-in gate owns input until it's dismissed
       if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
         e.preventDefault();
         App.palette.toggle();
@@ -452,6 +453,7 @@ window.App = window.App || {};
     App.branding.apply();
     firstRun();
     App.router.start();
+    if (!App.auth.isSignedIn()) App.auth.showGate();
   };
 
   App.main = Main;

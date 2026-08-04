@@ -114,6 +114,7 @@ window.App = window.App || {};
     const names = store.bankNames();
     const stats = store.globalStats();
     const session = store.state.session;
+    const practiceSession = store.state.practiceSession;
 
     let html = "";
 
@@ -126,6 +127,14 @@ window.App = window.App || {};
         '<span class="nav-ico">' + App.icon("resume", 17) + '</span>' +
         '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Resume exam</span>' +
         '<span class="nav-pill pill-resume">' + (session.index + 1) + "/" + session.questions.length + "</span></button>";
+    }
+    /* same idea for an in-progress Practice session — its own slot, never
+       mixed with the exam session above. */
+    if (practiceSession && activeName !== "practice" && store.getBank(practiceSession.bankKey)) {
+      html += '<button class="nav-item nav-resume" id="nav-resume-practice">' +
+        '<span class="nav-ico">' + App.icon("brain", 17) + '</span>' +
+        '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Resume practice</span>' +
+        '<span class="nav-pill pill-resume">' + (practiceSession.index + 1) + "/" + practiceSession.questions.length + "</span></button>";
     }
 
     html +=
@@ -167,6 +176,8 @@ window.App = window.App || {};
     });
     const resumeBtn = document.getElementById("nav-resume-exam");
     if (resumeBtn) resumeBtn.onclick = function () { App.views.exam.resumeSession(); };
+    const resumePracticeBtn = document.getElementById("nav-resume-practice");
+    if (resumePracticeBtn) resumePracticeBtn.onclick = function () { App.views.practice.resumeSession(); };
 
     /* add tooltips for collapsed mode */
     nav.querySelectorAll(".nav-item").forEach(function (b) {
@@ -331,7 +342,9 @@ window.App = window.App || {};
 
     /* warn before unload while a session exists */
     window.addEventListener("beforeunload", function (e) {
-      if (App.store.state.session && location.hash.indexOf("#/exam") === 0) {
+      const onExam = App.store.state.session && location.hash.indexOf("#/exam") === 0;
+      const onPractice = App.store.state.practiceSession && location.hash.indexOf("#/practice") === 0;
+      if (onExam || onPractice) {
         e.preventDefault();
         e.returnValue = "";
       }

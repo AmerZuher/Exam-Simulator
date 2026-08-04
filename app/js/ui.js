@@ -112,6 +112,34 @@ window.App = window.App || {};
 
   UI.customModal = openModal;
 
+  /* ---------------- question explanation modal ----------------
+     QA Review and post-submit Exam/Practice results show explanations this
+     way (a button that opens this modal) rather than inline — callers must
+     only render the button at all when `q.explanation` exists (never a
+     disabled/empty one), so just don't call this for a question that has
+     no explanation. */
+  UI.explainModal = function (q) {
+    if (!q || !q.explanation) return;
+    const u = U();
+    const correct = q.explanation.correct
+      ? "<p>" + u.esc(q.explanation.correct) + "</p>"
+      : '<p style="color:var(--muted)">No reasoning was saved for the correct answer.</p>';
+    const incorrect = (q.explanation.incorrect && q.explanation.incorrect.length)
+      ? "<label class='field-lbl' style='margin-top:14px'>Why the other options are wrong</label>" +
+        '<ul class="explain-list">' + q.explanation.incorrect.map(function (t) { return "<li>" + u.esc(t) + "</li>"; }).join("") + "</ul>"
+      : "";
+
+    const veil = openModal(
+      '<div class="modal-head"><div>' +
+      '<div class="modal-title">' + App.icon("lightbulb", 16) + " Explanation</div>" +
+      '<div class="modal-sub">' + u.esc(q.question) + "</div></div>" +
+      '<button class="icon-btn" data-x>' + App.icon("x", 15) + "</button></div>" +
+      '<div class="explain-body">' + correct + incorrect + "</div>" +
+      '<div class="modal-foot"><button class="btn btn-primary" data-x>Got it</button></div>'
+    );
+    veil.querySelectorAll("[data-x]").forEach(function (b) { b.onclick = closeModal; });
+  };
+
   /* ---------------- bank icon / tone / logo picker ---------------- */
   /* Renders a badge from a plain {icon, tone, logo} look — the one place
      that decides how a badge is drawn, whether it's backed by a stored bank

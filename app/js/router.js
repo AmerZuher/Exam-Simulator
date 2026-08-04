@@ -21,6 +21,7 @@ window.App = window.App || {};
       if (name === "generator") return { name: "generator", params: {} };
       if (name === "import") return { name: "import", params: {} };
       if (name === "exam") return { name: "exam", params: {} };
+      if (name === "practice") return { name: "practice", params: {} };
       if (name === "results") return { name: "results", params: {} };
       if (name === "progress") return { name: "progress", params: {} };
       if (name === "settings") return { name: "settings", params: {} };

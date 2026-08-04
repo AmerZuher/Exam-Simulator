@@ -8,6 +8,7 @@ window.App = window.App || {};
     mastered: "exampro_mastered_v1",
     settings: "exampro_settings_v1",
     session: "exampro_session_v1",
+    practiceSession: "exampro_practice_session_v1",
     srs: "exampro_srs_v1",
     perf: "exampro_perf_v1",
     activity: "exampro_activity_v1",
@@ -44,6 +45,7 @@ window.App = window.App || {};
       mastered: {},   // name -> { qid: true }
 settings: { theme: "light", accent: "indigo", sidebarCollapsed: false, dailyGoal: 20 },
     session: null,   // in-progress exam snapshot
+    practiceSession: null,   // in-progress Practice Mode snapshot — its own slot, never mixed with `session`
     dueDates: {},    // legacy v1 schedule — migrated into `srs` on load
     srs: {},         // name -> { qid: { ease, interval, reps, lapses, due, last, grade } }
     perf: {},        // name -> { qid: { seen, correct, streak, worst, ms, last } }
@@ -58,6 +60,7 @@ settings: { theme: "light", accent: "indigo", sidebarCollapsed: false, dailyGoal
       const s = readJSON(KEYS.settings, null);
       if (s) this.state.settings = Object.assign(this.state.settings, s);
       this.state.session = readJSON(KEYS.session, null);
+      this.state.practiceSession = readJSON(KEYS.practiceSession, null);
       this.state.dueDates = readJSON("exampro_duedates_v1", {});
       this.state.srs = readJSON(KEYS.srs, {});
       this.state.perf = readJSON(KEYS.perf, {});
@@ -88,6 +91,8 @@ settings: { theme: "light", accent: "indigo", sidebarCollapsed: false, dailyGoal
     saveSettings: function () { writeJSON(KEYS.settings, this.state.settings); },
     saveSession: function () { writeJSON(KEYS.session, this.state.session); },
     clearSession: function () { this.state.session = null; try { localStorage.removeItem(KEYS.session); } catch (e) {} },
+    savePracticeSession: function () { writeJSON(KEYS.practiceSession, this.state.practiceSession); },
+    clearPracticeSession: function () { this.state.practiceSession = null; try { localStorage.removeItem(KEYS.practiceSession); } catch (e) {} },
     saveDueDates: function () { writeJSON("exampro_duedates_v1", this.state.dueDates); },
     saveSrs: function () { writeJSON(KEYS.srs, this.state.srs); },
     savePerf: function () { writeJSON(KEYS.perf, this.state.perf); },

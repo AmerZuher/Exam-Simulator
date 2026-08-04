@@ -1278,6 +1278,12 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
 .qgrid-btn:hover { border-color: var(--line-strong); color: var(--ink); transform: scale(1.06); }
 .qgrid-btn.ans { background: var(--surface-3); color: var(--ink); border-color: var(--line-strong); }
 .qgrid-btn.cur { background: var(--acc); border-color: var(--acc); color: #fff; box-shadow: var(--acc-glow); }
+/* Practice Mode: a checked question's grid cell shows right/wrong at a glance */
+.qgrid-btn.ok { background: var(--ok-soft); color: var(--ok); border-color: var(--ok-line); }
+.qgrid-btn.bad { background: var(--bad-soft); color: var(--bad); border-color: var(--bad-line); }
+.qgrid-btn.ok.cur, .qgrid-btn.bad.cur { color: #fff; box-shadow: var(--acc-glow); }
+.qgrid-btn.ok.cur { background: var(--ok); border-color: var(--ok); }
+.qgrid-btn.bad.cur { background: var(--bad); border-color: var(--bad); }
 .qgrid-btn .qd {
   position: absolute;
   top: 3px; right: 3px;
@@ -2751,30 +2757,36 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
 .stepper {
   display: inline-flex;
   align-items: stretch;
-  height: 34px;
+  height: 38px;
   border: 1px solid var(--line);
   border-radius: 10px;
   overflow: hidden;
   background: var(--surface);
+  transition: border-color 0.15s ease;
 }
+.stepper:hover, .stepper:focus-within { border-color: var(--acc-line); }
 .stepper .icon-btn {
-  width: 34px; height: 100%;
+  width: 36px; height: 100%;
   border: none;
   border-radius: 0;
   background: transparent;
+  color: var(--acc);
 }
-.stepper .icon-btn:hover { background: var(--surface-2); transform: none; }
+.stepper .icon-btn:hover { background: var(--acc-softer); transform: none; }
+.stepper .icon-btn:active { background: var(--acc-soft); }
 .stepper .input {
-  width: 56px;
+  width: 62px;
   height: 100%;
   flex: none;
   text-align: center;
-  padding: 0 6px;
+  padding: 0;
   border: none;
   border-left: 1px solid var(--line);
   border-right: 1px solid var(--line);
   border-radius: 0;
+  font-size: 14.5px;
   font-weight: 800;
+  letter-spacing: -0.01em;
   -moz-appearance: textfield;
 }
 .stepper .input:focus { box-shadow: none; }
@@ -2847,6 +2859,40 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
   color: var(--acc);
   border: 1px solid var(--acc-line);
 }
+
+/* ---------- Practice Mode ---------- */
+.practice-feedback {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.practice-feedback.ok { background: var(--ok-soft); color: var(--ok); border: 1px solid var(--ok-line); }
+.practice-feedback.bad { background: var(--bad-soft); color: var(--bad); border: 1px solid var(--bad-line); }
+
+/* Practice Mode's inline explanation (shown automatically once checked) and
+   the modal variant used by QA Review / post-submit results share the same
+   look — just one lives on the page, the other inside .modal. */
+.explain-box, .explain-body {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--acc-softer);
+  border: 1px solid var(--acc-line);
+  font-size: 12.5px;
+  color: var(--ink);
+  line-height: 1.6;
+}
+.explain-box-head { display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--acc); margin-bottom: 8px; }
+.explain-box p, .explain-body p { margin: 0 0 8px; }
+.explain-box p:last-child, .explain-body p:last-child { margin-bottom: 0; }
+.explain-box ul, .explain-list { margin: 6px 0 0 18px; padding: 0; font-weight: 500; color: var(--muted); }
+.explain-box ul li, .explain-list li { margin-bottom: 4px; }
+.explain-body { background: var(--surface-2); border-color: var(--line); }
 
 /* ---------- Print (Study page) ---------- */
 @media print {

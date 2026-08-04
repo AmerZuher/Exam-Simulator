@@ -193,6 +193,11 @@ App.views = App.views || {};
       const veil = wrap.querySelector('.veil[data-veil="' + id + '"]');
       if (veil) veil.classList.add("revealed");
     });
+    u.on(wrap, "click", "[data-explain]", function (e, el) {
+      const id = el.dataset.explain;
+      const q = bank.questions.filter(function (x) { return String(x.id) === id; })[0];
+      if (q) App.ui.explainModal(q);
+    });
     u.on(wrap, "click", "[data-star]", function (e, el) {
       const id = el.dataset.star;
       const on = App.store.toggleMastered(bank.name, id);
@@ -258,6 +263,7 @@ App.views = App.views || {};
       '<span class="qcard-num">#' + (i + 1) + "</span>" +
       App.ui.typeChip(q.type) +
       scheduleChip(bank.name, q.id) +
+      (q.explanation ? '<button class="icon-btn" data-explain="' + q.id + '" title="Why?" aria-label="Show explanation">' + App.icon("lightbulb", 14) + "</button>" : "") +
       '<div class="spacer">' +
       '<button class="star-btn no-print' + (mastered ? " on" : "") + '" data-star="' + q.id + '" title="' + (mastered ? "Mastered — click to unmark" : "Mark as mastered") + '">' + App.icon("star", 16) + "</button>" +
       "</div></div>" +

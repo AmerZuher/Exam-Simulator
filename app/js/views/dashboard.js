@@ -12,6 +12,7 @@ App.views = App.views || {};
     const ungrouped = store.ungroupedBankNames();
     const groupNames = store.groupNames();
     const session = store.state.session;
+    const practiceSession = store.state.practiceSession;
     const isServed = location.protocol !== "file:";
 
     let html = "";
@@ -42,6 +43,20 @@ App.views = App.views || {};
         '<div style="margin-left:auto;display:flex;gap:8px">' +
         '<button class="btn btn-danger btn-sm" data-act="discard-session">Discard</button>' +
         '<button class="btn btn-primary btn-sm" data-act="resume-session">' + App.icon("resume", 14) + "Resume exam</button>" +
+        "</div></section>";
+    }
+
+    /* practice resume banner — its own slot, never mixed with the exam session above */
+    if (practiceSession && store.getBank(practiceSession.bankKey)) {
+      const checked = Object.keys(practiceSession.checked || {}).length;
+      html +=
+        '<section class="resume-banner rise" style="margin-top:18px;animation-delay:.05s">' +
+        '<div class="rb-ico">' + App.icon("brain", 20) + "</div>" +
+        '<div style="min-width:0"><div class="rb-t">Practice in progress: ' + u.esc(practiceSession.bankKey) + "</div>" +
+        '<div class="rb-s">Question ' + (practiceSession.index + 1) + " of " + practiceSession.questions.length + " · " + checked + " checked</div></div>" +
+        '<div style="margin-left:auto;display:flex;gap:8px">' +
+        '<button class="btn btn-danger btn-sm" data-act="discard-practice">Discard</button>' +
+        '<button class="btn btn-primary btn-sm" data-act="resume-practice">' + App.icon("resume", 14) + "Resume practice</button>" +
         "</div></section>";
     }
 
@@ -251,8 +266,7 @@ App.views = App.views || {};
         : App.icon("sparkle", 14) + "<span>Ready when you are</span>") + "</div>" +
       '<div class="bank-actions">' +
       '<button class="icon-btn" data-act="study" data-key="' + u.esc(name) + '" title="Q&amp;A preview" aria-label="Study ' + u.esc(name) + '">' + App.icon("study", 15) + "</button>" +
-      '<button class="btn btn-soft btn-sm" data-act="review" data-key="' + u.esc(name) + '">' + App.icon("cards", 13) + "Review" +
-      (st.due ? '<span class="btn-badge">' + st.due + "</span>" : "") + "</button>" +
+      '<button class="btn btn-soft btn-sm" data-act="practice" data-key="' + u.esc(name) + '">' + App.icon("brain", 13) + "Practice</button>" +
       '<button class="btn btn-primary btn-sm" data-act="start" data-key="' + u.esc(name) + '">' + App.icon("play", 13) + "Exam</button>" +
       "</div></div></article>"
     );
@@ -315,7 +329,8 @@ App.views = App.views || {};
       const act = el.dataset.act, key = el.dataset.key;
       if (act === "start") App.views.exam.openSetup(key);
       else if (act === "study") App.router.go("#/study/" + encodeURIComponent(key));
-      else if (act === "review" || act === "review-bank") App.views.review.start(key, {});
+      else if (act === "practice") App.views.practice.openSetup(key);
+      else if (act === "review-bank") App.views.review.start(key, {});
     });
 
     /* bank card dropdown menus */
@@ -394,6 +409,14 @@ App.views = App.views || {};
       else if (act === "discard-session") {
         ui.confirm({ title: "Discard in-progress exam?", desc: "Your saved progress for this session will be removed.", confirmLabel: "Discard", danger: true }, function () {
           store.clearSession();
+          ui.toast("Session discarded.", "info");
+          rerender();
+        });
+      }
+      else if (act === "resume-practice") App.views.practice.resumeSession();
+      else if (act === "discard-practice") {
+        ui.confirm({ title: "Discard in-progress practice session?", desc: "Your saved progress for this session will be removed.", confirmLabel: "Discard", danger: true }, function () {
+          store.clearPracticeSession();
           ui.toast("Session discarded.", "info");
           rerender();
         });

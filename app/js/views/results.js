@@ -53,7 +53,7 @@ App.views = App.views || {};
       '<div class="acc-bars" style="margin-top:16px;max-width:460px">' + typeRows + "</div>" +
       '<div style="display:flex;gap:9px;margin-top:20px;flex-wrap:wrap">' +
       (missedIds(R).length ? '<button class="btn btn-primary" data-act="drill">' + App.icon("bolt", 15) + "Drill the " + missedIds(R).length + " you missed</button>" : "") +
-      '<button class="btn btn-soft" data-act="retake">' + App.icon("refresh", 15) + "Retake exam</button>" +
+      '<button class="btn btn-soft" data-act="retake">' + App.icon("refresh", 15) + (R.mode === "practice" ? "Retake in Practice Mode" : "Retake exam") + "</button>" +
       '<button class="btn btn-ghost" data-act="study">' + App.icon("study", 15) + "Q&A preview</button>" +
       '<button class="btn btn-ghost" data-act="progress">' + App.icon("chart", 15) + "Progress</button>" +
       '<button class="btn btn-ghost" data-act="export">' + App.icon("download", 15) + "Report</button>" +
@@ -84,6 +84,7 @@ App.views = App.views || {};
       const act = el.dataset.act;
       if (act === "retake") {
         if (R.isMixed) App.ui.toast("Mixed drills can't be retaken directly — rebuild it from Progress.", "info");
+        else if (R.mode === "practice") App.views.practice.openSetup(R.bankKey);
         else App.views.exam.openSetup(R.bankKey);
       } else if (act === "study") {
         if (R.isMixed) App.router.go("#/progress");
@@ -230,6 +231,9 @@ App.views = App.views || {};
     }
 
     list.innerHTML = items.map(function (g, i) { return reviewCard(g, i); }).join("");
+    list.querySelectorAll("[data-explain]").forEach(function (btn) {
+      btn.onclick = function () { App.ui.explainModal(items[parseInt(btn.dataset.explain, 10)].q); };
+    });
   }
 
   function reviewCard(g, i) {
@@ -237,34 +241,7 @@ App.views = App.views || {};
     const q = g.q;
     const statusCls = g.isCorrect ? "chip-ok" : g.isSkipped ? "chip-mut" : "chip-bad";
     const statusTxt = g.isCorrect ? "Correct" : g.isSkipped ? "Skipped" : "Incorrect";
-
-    let body = "";
-    if (q.type === "matching") {
-      body = '<div class="match-pairs">' + q.leftItems.map(function (left, li) {
-        const yours = g.resp && g.resp[li] ? g.resp[li] : "—";
-        const expected = q.correctAnswers[li] || "—";
-        const ok = yours === expected;
-        return (
-          '<div class="match-pair ' + (ok ? "is-ok" : "is-wrong") + '">' +
-          '<div class="mp-l">' + u.esc(left) + (ok ? "" : '<div class="mp-expected">Expected: ' + u.esc(expected) + "</div>") + "</div>" +
-          '<div class="mp-arrow">' + App.icon(ok ? "check" : "x", 15, 2.2) + "</div>" +
-          '<div class="mp-r">' + u.esc(yours) + "</div>" +
-          "</div>"
-        );
-      }).join("") + "</div>";
-    } else {
-      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      body = '<div class="opt-list">' + q.options.map(function (opt, oi) {
-        const wasChosen = q.type === "single" ? g.resp === oi : Array.isArray(g.resp) && g.resp.indexOf(oi) !== -1;
-        const isAnswer = q.correctIndices.indexOf(oi) !== -1;
-        let cls = "opt-row", tag = "", letter = letters[oi % 26];
-        if (wasChosen && isAnswer) { cls += " is-correct"; tag = '<span class="opt-tag t-ok">Your answer</span>'; letter = App.icon("check", 12, 3); }
-        else if (wasChosen && !isAnswer) { cls += " is-wrong"; tag = '<span class="opt-tag t-bad">Your pick</span>'; letter = App.icon("x", 12, 3); }
-        else if (!wasChosen && isAnswer) { cls += " is-missed"; tag = '<span class="opt-tag t-acc">Correct answer</span>'; letter = App.icon("check", 12, 3); }
-        return '<div class="' + cls + '"><span class="opt-letter">' + letter + "</span><span>" + u.esc(opt) + "</span>" + tag + "</div>";
-      }).join("") + "</div>";
-    }
-
+    const body = App.examShared.answerReviewHtml(q, g.resp);
     const media = App.ui.media(q);
 
     return (
@@ -273,6 +250,7 @@ App.views = App.views || {};
       App.ui.typeChip(q.type) +
       (g.flagged ? '<span class="chip chip-warn">' + App.icon("flag", 10, 2.4) + "Flagged</span>" : "") +
       (g.ms ? '<span class="chip chip-mut">' + App.icon("clock", 10, 2.2) + u.fmtDuration(Math.round(g.ms / 1000)) + "</span>" : "") +
+      (q.explanation ? '<button class="icon-btn" data-explain="' + i + '" title="Why?" aria-label="Show explanation">' + App.icon("lightbulb", 14) + "</button>" : "") +
       '<div class="spacer"><span class="chip ' + statusCls + '">' + statusTxt + "</span></div></div>" +
       '<div class="qcard-body"><div class="qcard-q">' + u.esc(q.question) + "</div>" + media + body + "</div></article>"
     );

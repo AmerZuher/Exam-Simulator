@@ -140,6 +140,8 @@ window.App = window.App || {};
       (stats.streak ? '<span class="nav-pill pill-streak">' + App.icon("flame", 9, 2.4) + stats.streak + "</span>" : "") + "</button>" +
       '<button class="nav-item' + (activeName === "import" ? " active" : "") + '" data-nav="#/import">' +
       '<span class="nav-ico">' + App.icon("upload", 17) + '</span><span>Import bank</span></button>' +
+      '<button class="nav-item' + (activeName === "generator" ? " active" : "") + '" data-nav="#/generator">' +
+      '<span class="nav-ico">' + App.icon("robot", 17) + '</span><span>AI Generator</span></button>' +
       '<button class="nav-item' + (activeName === "settings" ? " active" : "") + '" data-nav="#/settings">' +
       '<span class="nav-ico">' + App.icon("gear", 17) + '</span><span>Settings</span></button>';
 

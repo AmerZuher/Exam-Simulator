@@ -16,14 +16,14 @@ App.views = App.views || {};
     "### Answer Key&#10;| Question Number | Correct Answer |&#10;| 1 | Option B |";
 
   const JSON_PLACEHOLDER =
-    "{&#10;  &quot;name&quot;: &quot;My bank&quot;,&#10;  &quot;group&quot;: &quot;Exam 250-609&quot;,&#10;  &quot;questions&quot;: [&#10;    {&#10;" +
+    "{&#10;  &quot;name&quot;: &quot;My bank&quot;,&#10;  &quot;questions&quot;: [&#10;    {&#10;" +
     "      &quot;question&quot;: &quot;Capital of France?&quot;,&#10;      &quot;type&quot;: &quot;single&quot;,&#10;" +
     "      &quot;options&quot;: [&quot;London&quot;, &quot;Paris&quot;],&#10;      &quot;correctIndices&quot;: [1]&#10;" +
     "    }&#10;  ]&#10;}";
 
   const HINTS = {
     md: "Question headings look like <code>### 1. Your question</code>, options like <code>- [ ] Choice</code>, and an answer key table at the end. A leading <code># Title</code> line sets the bank name.",
-    json: "Either a bare array of questions or <code>{ \"name\", \"group\", \"questions\": [...] }</code> — the shape produced by <b>Export as JSON</b>. <code>name</code> sets the bank name."
+    json: "Either a bare array of questions or <code>{ \"name\", \"questions\": [...] }</code> — the shape produced by <b>Export as JSON</b>. <code>name</code> sets the bank name."
   };
 
   /* ---------------- JSON bank parsing ---------------- */
@@ -40,8 +40,16 @@ App.views = App.views || {};
     return dups;
   }
 
+  const DIFFICULTIES = ["Easy", "Medium", "Hard"];
+
   /* Fills in whatever a hand-written question omits, so authoring JSON by hand
-     works as well as re-importing an export. */
+     works as well as re-importing an export.
+
+     difficulty/explanation are stored on the question but not surfaced in any
+     UI yet — this is data-model support only (so a bank round-trips through
+     export/import without losing what the AI Generator's JSON schema asks
+     for, and so a future manual "set difficulty" control has somewhere real
+     to write to), not a new visible feature. */
   function normalizeQuestion(raw, i) {
     const q = raw || {};
     const options = Array.isArray(q.options) ? q.options.map(String) : [];
@@ -59,7 +67,7 @@ App.views = App.views || {};
     }
     if (type !== "matching" && !correctIndices.length && options.length) correctIndices = [0];
 
-    return {
+    const out = {
       id: i + 1,
       question: String(q.question == null ? "" : q.question).trim(),
       type: type,
@@ -72,6 +80,24 @@ App.views = App.views || {};
       audios: Array.isArray(q.audios) ? q.audios.map(String) : [],
       videos: Array.isArray(q.videos) ? q.videos.map(String) : []
     };
+
+    if (q.difficulty != null && String(q.difficulty).trim()) {
+      const rawDiff = String(q.difficulty).trim();
+      const known = DIFFICULTIES.find(function (d) { return d.toLowerCase() === rawDiff.toLowerCase(); });
+      out.difficulty = known || rawDiff;   // normalize casing when it matches; otherwise keep whatever was given
+    }
+
+    if (q.explanation && typeof q.explanation === "object" && !Array.isArray(q.explanation)) {
+      const correct = typeof q.explanation.correct === "string" ? q.explanation.correct.trim() : "";
+      const incorrect = Array.isArray(q.explanation.incorrect) ? q.explanation.incorrect.map(String).filter(Boolean) : [];
+      if (correct || incorrect.length) {
+        out.explanation = {};
+        if (correct) out.explanation.correct = correct;
+        if (incorrect.length) out.explanation.incorrect = incorrect;
+      }
+    }
+
+    return out;
   }
 
   /* -> { name, questions, warnings }; throws with a readable message. */
@@ -94,6 +120,12 @@ App.views = App.views || {};
       const q = normalizeQuestion(raw, questions.length);
       const label = "Q" + (i + 1);
       if (!q.question) { warnings.push({ msg: label + ": no question text — skipped." }); return; }
+      if (q.difficulty && DIFFICULTIES.indexOf(q.difficulty) === -1) {
+        warnings.push({ msg: label + ": difficulty \"" + q.difficulty + "\" isn't Easy/Medium/Hard — kept as typed." });
+      }
+      if (raw.explanation != null && !q.explanation) {
+        warnings.push({ msg: label + ": explanation was present but had no usable \"correct\" text or \"incorrect\" list — ignored." });
+      }
       if (q.type === "matching") {
         if (!q.leftItems.length) { warnings.push({ msg: label + ": matching question has no leftItems — skipped." }); return; }
         if (!Object.keys(q.correctAnswers).length) warnings.push({ msg: label + ": no correctAnswers map — matches will be blank." });
@@ -133,7 +165,6 @@ App.views = App.views || {};
     questions.forEach(function (q, i) { q.id = i + 1; });
     return {
       name: (!Array.isArray(data) && data.name) ? String(data.name) : "",
-      group: (!Array.isArray(data) && data.group) ? String(data.group) : "",
       questions: questions,
       warnings: warnings
     };
@@ -151,6 +182,7 @@ App.views = App.views || {};
 
   View.render = function (root) {
     const names = App.store.bankNames();
+    const groupNames = App.store.groupNames();
     pendingLook = null;   // fresh visit — start from the default look each time
     multiQueue = null;
     lastAutoTitle = "";
@@ -160,8 +192,11 @@ App.views = App.views || {};
       '<section class="card card-pad rise">' +
       '<div style="display:flex;flex-direction:column;gap:18px">' +
 
+      '<div style="display:flex;align-items:flex-start;gap:14px;justify-content:space-between">' +
       "<div><h2 style='font-size:17px;font-weight:800;letter-spacing:-0.02em'>Import question bank</h2>" +
       "<p style='font-size:12.5px;color:var(--muted);font-weight:500;margin-top:4px'>Drop a markdown file onto this page, paste raw markdown below, or import a previously exported JSON bank. The engine repairs broken characters, detects sections and validates answers live.</p></div>" +
+      '<button class="btn btn-ghost btn-sm" data-act="open-generator" style="flex-shrink:0">' + App.icon("robot", 14) + "AI Exam Generator</button>" +
+      "</div>" +
 
       '<div class="dropzone" id="import-drop">' +
       '<div class="dz-ico">' + App.icon("upload", 21) + "</div>" +
@@ -175,19 +210,21 @@ App.views = App.views || {};
 
       '<div id="import-single">' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" class="import-grid">' +
-      "<div><label class='field-lbl'>Import method</label><select class='select' id='import-mode'>" +
-      '<option value="new">Create a new bank</option><option value="append">Append to an existing bank</option></select></div>' +
       "<div id='import-title-wrap'><label class='field-lbl'>Bank name &amp; icon</label>" +
       '<div style="display:flex;gap:10px;align-items:center">' +
       '<span class="bank-badge editable" id="import-look-badge" role="button" tabindex="0" title="Choose icon or upload a logo"></span>' +
       '<input class="input" id="import-title" placeholder="e.g. PMP Practice Set 1" maxlength="70" style="flex:1"></div></div>' +
-      "<div id='import-target-wrap' style='display:none'><label class='field-lbl'>Destination bank</label>" +
-      "<select class='select' id='import-target'>" +
-      (names.length ? names.map(function (n) { return '<option value="' + App.u.esc(n) + '">' + App.u.esc(n) + "</option>"; }).join("") : '<option value="">No banks yet</option>') +
-      "</select></div>" +
+      "<div><label class='field-lbl'>Add to Exam Group</label>" +
+      '<div style="display:flex;gap:8px;align-items:center">' +
+      "<select class='select' id='import-group' style='flex:1'>" +
+      '<option value="">No group (ungrouped)</option>' +
+      groupNames.map(function (g) { return '<option value="' + App.u.esc(g) + '">' + App.u.esc(g) + "</option>"; }).join("") +
+      "</select>" +
+      '<button type="button" class="btn btn-ghost" id="import-group-new-btn" style="flex-shrink:0">' + App.icon("layers", 14) + "New group</button>" +
+      "</div></div>" +
       "</div>" +
 
-      "<div><label class='field-lbl'>Content</label>" +
+      "<div style='margin-top:18px'><label class='field-lbl'>Content</label>" +
       '<div class="import-content-wrap">' +
       '<textarea class="textarea" id="import-content" rows="11" placeholder="' + MD_PLACEHOLDER + '"></textarea>' +
       '<span class="chip chip-acc import-fmt-badge" id="import-fmt-badge">' + App.icon("book", 11, 2.2) + "Markdown</span>" +
@@ -214,7 +251,6 @@ App.views = App.views || {};
     const u = App.u;
     const drop = root.querySelector("#import-drop");
     const file = root.querySelector("#import-file");
-    const mode = root.querySelector("#import-mode");
     const content = root.querySelector("#import-content");
 
     drop.onclick = function () { file.click(); };
@@ -229,10 +265,17 @@ App.views = App.views || {};
     });
     file.onchange = function () { if (file.files.length) readFiles(file.files, root); };
 
-    mode.onchange = function () {
-      const isNew = mode.value === "new";
-      root.querySelector("#import-title-wrap").style.display = isNew ? "" : "none";
-      root.querySelector("#import-target-wrap").style.display = isNew ? "none" : "";
+    const groupSelect = root.querySelector("#import-group");
+    root.querySelector("#import-group-new-btn").onclick = function () {
+      App.ui.prompt({ title: "New exam group", desc: "Give this group a name — e.g. a certification track.", placeholder: "Group name", confirmLabel: "Create" }, function (v) {
+        const name = App.store.addGroup(v);
+        const opt = document.createElement("option");
+        opt.value = name; opt.textContent = name;
+        groupSelect.appendChild(opt);
+        groupSelect.value = name;
+        groupSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        App.ui.toast("Group “" + name + "” created and selected.", "ok");
+      });
     };
 
     const lookBadge = root.querySelector("#import-look-badge");
@@ -261,6 +304,8 @@ App.views = App.views || {};
 
     root.querySelector("#import-cancel").onclick = function () { App.router.go("#/dashboard"); };
     root.querySelector("#import-go").onclick = function () { doImport(root); };
+    const genBtn = root.querySelector('[data-act="open-generator"]');
+    if (genBtn) genBtn.onclick = function () { App.router.go("#/generator"); };
   }
 
   /* Content is unambiguous about its own format: JSON always opens with a
@@ -361,18 +406,16 @@ App.views = App.views || {};
       multiQueue = files.map(function (f, i) {
         const isJson = /\.json$/i.test(f.name);
         let bankName = f.name.replace(/\.[^.]+$/, "");
-        let group = "";
         if (isJson) {
           try {
             const data = JSON.parse(texts[i]);
             if (data && !Array.isArray(data) && data.name) bankName = String(data.name);
-            if (data && !Array.isArray(data) && data.group) group = String(data.group);
           } catch (e) { /* this file's own diagnostics will surface the parse error */ }
         } else {
           const mdTitle = extractMdTitle(texts[i]);
           if (mdTitle) bankName = mdTitle;
         }
-        return { fileName: f.name, bankName: bankName, group: group, format: isJson ? "json" : "md", text: texts[i] };
+        return { fileName: f.name, bankName: bankName, format: isJson ? "json" : "md", text: texts[i] };
       });
       renderMultiQueue(root);
       App.ui.toast(files.length + " files loaded — review each before importing.", "info");
@@ -549,13 +592,12 @@ App.views = App.views || {};
     multiQueue.forEach(function (entry) {
       const name = (entry.bankName || "").trim() || entry.fileName.replace(/\.[^.]+$/, "");
       try {
-        let questions, group = entry.group || "";
+        let questions;
         if (entry.format === "json") {
           const res = parseJsonBank(entry.text);
           const errs = res.warnings.filter(function (w) { return w.severity === "error"; });
           if (errs.length) { problems.push(name + ": " + errs.length + " error(s) — skipped."); return; }
           questions = res.questions;
-          group = res.group || group;
         } else {
           const res = App.parser.parse(entry.text);
           if (!res.questions.length) { problems.push(name + ": no questions found — skipped."); return; }
@@ -563,7 +605,7 @@ App.views = App.views || {};
           if (errs.length) { problems.push(name + ": " + errs.length + " error(s) — skipped."); return; }
           questions = res.questions;
         }
-        App.store.addBank(name, questions, group);
+        App.store.addBank(name, questions);
         created++;
       } catch (e) {
         problems.push(name + ": " + e.message + " — skipped.");
@@ -680,13 +722,11 @@ App.views = App.views || {};
   }
 
   function doImport(root) {
-    const mode = root.querySelector("#import-mode").value;
     const title = root.querySelector("#import-title").value.trim();
-    const target = root.querySelector("#import-target").value;
     const text = root.querySelector("#import-content").value;
+    const examGroup = root.querySelector("#import-group").value;
 
     if (!text.trim()) { App.ui.toast("Paste or drop some content first.", "err"); return; }
-    if (mode === "append" && !target) { App.ui.toast("Choose a destination bank.", "err"); return; }
     if (blockingErrors > 0) { App.ui.toast("Fix the " + blockingErrors + " error(s) shown in diagnostics first.", "err"); return; }
 
     let res;
@@ -698,7 +738,7 @@ App.views = App.views || {};
         return;
       }
       /* an exported bank carries its own name — use it when none was typed */
-      if (mode === "new" && !title && res.name) {
+      if (!title && res.name) {
         root.querySelector("#import-title").value = res.name;
       }
     } else {
@@ -710,25 +750,23 @@ App.views = App.views || {};
     }
 
     const finalTitle = title || (format === "json" ? res.name : "");
-    if (mode === "new" && !finalTitle) { App.ui.toast("Give the new bank a name.", "err"); return; }
+    if (!finalTitle) { App.ui.toast("Give the new bank a name.", "err"); return; }
 
-    if (mode === "new") {
-      const final = App.store.addBank(finalTitle, res.questions, format === "json" ? res.group : "");
-      if (pendingLook) App.store.setBankLook(final, pendingLook.icon, pendingLook.tone, pendingLook.logo);
-      App.ui.toast("Bank “" + final + "” created with " + res.questions.length + " questions.", "ok");
-    } else {
-      const offset = App.store.appendToBank(target, res.questions);
-      App.ui.toast(res.questions.length + " questions appended from #" + (offset + 1) + ".", "ok");
-    }
+    const final = App.store.addBank(finalTitle, res.questions);
+    if (pendingLook) App.store.setBankLook(final, pendingLook.icon, pendingLook.tone, pendingLook.logo);
+    if (examGroup) App.store.setBankGroup(final, examGroup);
+
+    App.ui.toast("Bank “" + final + "” created with " + res.questions.length + " questions." + (examGroup ? " Added to “" + examGroup + "”." : ""), "ok");
     App.router.go("#/dashboard");
   }
 
-  /* The AI exam-generation prompt (kept from the legacy app, tightened) */
   /* Turns the current parse diagnostics into a plain-text report meant to be
      pasted straight back to whichever AI generated the exam — each item
      quotes the exact offending value and states the fix in terms of this
-     app's own formatting rules (see View.copyAIPrompt), so the AI can act on
-     it without any extra back-and-forth. */
+     app's own Markdown formatting rules, so the AI can act on it without any
+     extra back-and-forth. (The full exam-generation prompt itself now lives
+     on its own page — see App.views.generator — since it grew configurable
+     options beyond a single flat "copy prompt" button.) */
   function diagnosticsReportText(p) {
     const lines = [
       "The exam file you generated has formatting problems that ExamPro's importer caught — please fix these in the source and resend the corrected file. Don't change question content, only the formatting issues listed below.",
@@ -747,50 +785,6 @@ App.views = App.views || {};
     lines.push("Formatting reference: question headings are \"### N. Question text\", options are \"- [ ] Choice\", matching definitions are one \"Definition X: text\" per line with exactly one option per definition, and the answer key is a \"| Question Number | Correct Answer |\" table where matching answers list the options in definition order separated by commas.");
     return lines.join("\n");
   }
-
-  View.copyAIPrompt = function () {
-    const prompt = [
-      "Please create an exam based on the content I provide you below.",
-      "",
-      "Follow these strict formatting and content rules:",
-      "",
-      '1. **Question Types:** Create a mix of Single Choice, Multi Choice, "Choose the right word with the def", True/False, and Matching questions. Treat True/False as single-choice questions (with options True and False).',
-      "2. **Question Count:** Create exactly 20 questions.",
-      "3. **No Sections:** Do not group the questions by type or create section headers. Mix the question types up and number them sequentially from 1 to 20.",
-      "4. **Question Headings:** Format the heading for EVERY question exactly like this: ### 1. [Question Text]",
-      "5. **Options Format:** Use - [ ]  for all options instead of A), B), C), etc.",
-      "Example:",
-      "### 1. What is the capital of France?",
-      "- [ ] London",
-      "- [ ] Paris",
-      "- [ ] Berlin",
-      "6. **Choose the Right Word Questions:** For these, provide the definition in the question text, and format the options as a standard list of words using - [ ] .",
-      "7. **Matching Questions:** For matching questions, format them like this:",
-      "### 5. Matching: Match the definitions with the correct items.",
-      "- [ ] Option1",
-      "- [ ] Option2",
-      "- [ ] Option3",
-      "Definition A: Description of first item",
-      "Definition B: Description of second item",
-      "Definition C: Description of third item",
-      "   - The number of - [ ] options MUST equal the number of definitions.",
-      '   - Each definition MUST start with "Definition X:" where X is A, B, C, etc.',
-      "8. **Answer Key Table:** After all 20 questions, provide the Answer Key in a single Markdown table at the very bottom. Use exactly this table format:",
-      "| Question Number | Correct Answer |",
-      "| :-------------- | :------------- |",
-      "| 1               | Paris          |",
-      "9. **Multi-Choice Answers in Table:** For multi-choice questions, format the correct answers in the table using bullet points and <br> tags for line breaks. Example:",
-      "| 2               | • Option 1  <br>• Option 3 |",
-      "10. **Matching Question Answers in Table:** For matching questions, list the options in the same order as the definitions, separated by commas. Example:",
-      "| 5               | Option1, Option2, Option3 |",
-      "    Do NOT use the | character as a separator in the answer — use commas only.",
-      "",
-      "Here is the content to base the exam on:",
-      "[PASTE YOUR CONTENT HERE]"
-    ].join("\n");
-
-    App.ui.copyText(prompt, "AI prompt copied to clipboard.");
-  };
 
   App.views.importer = View;
 })();

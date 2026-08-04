@@ -2707,6 +2707,147 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
 .brand-badge.has-img { background: var(--surface-3); box-shadow: none; border: 1px solid var(--line); overflow: hidden; }
 .brand-badge img.brand-img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; box-sizing: border-box; }
 
+/* ---------- AI Exam Generator ---------- */
+.beta-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 99px;
+  background: var(--warn-soft);
+  color: var(--warn);
+  border: 1px solid var(--warn-line);
+  vertical-align: middle;
+  margin-left: 5px;
+}
+
+/* Segmented toggle row — used for output format, question types, and the
+   source-content tabs (single-select or multi-select, same look). */
+.seg-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.seg-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.seg-tab:hover { border-color: var(--line-strong); color: var(--ink); }
+.seg-tab.on { background: var(--acc-soft); border-color: var(--acc-line); color: var(--acc); }
+
+
+/* One cohesive pill (matching .seg-tab's height/border language) instead of
+   three separately-bordered controls, so it reads as a single field next to
+   the format toggle rather than a mismatched cluster. */
+.stepper {
+  display: inline-flex;
+  align-items: stretch;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.stepper .icon-btn {
+  width: 34px; height: 100%;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+.stepper .icon-btn:hover { background: var(--surface-2); transform: none; }
+.stepper .input {
+  width: 56px;
+  height: 100%;
+  flex: none;
+  text-align: center;
+  padding: 0 6px;
+  border: none;
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  font-weight: 800;
+  -moz-appearance: textfield;
+}
+.stepper .input:focus { box-shadow: none; }
+.stepper .input::-webkit-outer-spin-button, .stepper .input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* Beta difficulty-spread preview */
+.dist-widget { padding: 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+.dist-label { font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 10px; }
+.dist-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.dist-row-lbl { font-size: 11.5px; font-weight: 700; width: 48px; flex-shrink: 0; }
+.dist-slider { flex: 1; accent-color: var(--acc); }
+.dist-row-val { font-size: 11px; font-weight: 800; color: var(--muted); width: 34px; text-align: right; flex-shrink: 0; }
+.dist-bar { height: 4px; border-radius: 99px; background: var(--surface-3); overflow: hidden; margin: 0 0 10px 58px; }
+.dist-bar:last-child { margin-bottom: 0; }
+.dist-bar-fill { display: block; height: 100%; border-radius: 99px; transition: width 0.2s ease; }
+.dist-bar-fill.tone-ok { background: var(--ok); }
+.dist-bar-fill.tone-warn { background: var(--warn); }
+.dist-bar-fill.tone-bad { background: var(--bad); }
+
+/* Generate Exam (Beta) — loading sequence */
+.gen-loading { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+.gen-loading-row { display: flex; align-items: center; gap: 10px; font-size: 12.5px; font-weight: 600; color: var(--muted); opacity: 0.55; transition: opacity 0.2s ease, color 0.2s ease; }
+.gen-loading-row.active { opacity: 1; color: var(--ink); }
+.gen-loading-row.done { opacity: 1; color: var(--ok); }
+.gen-loading-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line-strong); flex-shrink: 0; }
+.gen-spinner {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--acc-soft);
+  border-top-color: var(--acc);
+  flex-shrink: 0;
+  animation: gen-spin 0.7s linear infinite;
+}
+@keyframes gen-spin { to { transform: rotate(360deg); } }
+
+/* Generate Exam (Beta) — result preview */
+.gen-preview-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--warn-soft);
+  border: 1px solid var(--warn-line);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 14px;
+}
+.gen-preview-banner .beta-badge { margin-left: 0; margin-right: 2px; }
+.gen-qcards { display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px; }
+.gen-qcard { padding: 14px 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+.gen-qcard-badges { display: flex; gap: 6px; margin-bottom: 10px; }
+.gen-qcard-q { font-size: 13.5px; font-weight: 700; margin-bottom: 10px; }
+.gen-opt-list { display: flex; flex-direction: column; gap: 6px; list-style: none; }
+.gen-opt { display: flex; align-items: center; gap: 9px; font-size: 12.5px; font-weight: 500; color: var(--muted); }
+.gen-opt.correct { color: var(--ok); font-weight: 700; }
+.gen-opt-dot { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid var(--line-strong); flex-shrink: 0; }
+.gen-explanation { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: 11.5px; color: var(--muted); font-weight: 500; line-height: 1.5; }
+.gen-explanation ul { margin: 6px 0 0 18px; padding: 0; }
+.confidence-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 3.5px 9px;
+  border-radius: 99px;
+  background: var(--acc-soft);
+  color: var(--acc);
+  border: 1px solid var(--acc-line);
+}
+
 /* ---------- Print (Study page) ---------- */
 @media print {
   body { background: #fff; }

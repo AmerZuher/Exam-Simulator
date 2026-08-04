@@ -63,7 +63,7 @@ window.App = window.App || {};
       list.push({ group: "Action", icon: "layers", title: "Build a custom exam", sub: "Mix several banks", run: function () { App.views.exam.openBuilder(); } });
     }
     list.push(
-      { group: "Action", icon: "robot", title: "Copy the AI exam-generation prompt", run: function () { App.views.importer.copyAIPrompt(); } },
+      { group: "Action", icon: "robot", title: "Open AI Exam Generator", run: function () { App.router.go("#/generator"); } },
       { group: "Action", icon: "sparkle", title: "Keyboard shortcuts", hint: "?", run: function () { App.main.showHelp(); } },
       {
         group: "Action",

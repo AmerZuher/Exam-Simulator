@@ -346,7 +346,7 @@ App.views = App.views || {};
       pop.querySelector('[data-m="export"]').onclick = function () {
         closeMenus();
         const bank = store.getBank(name);
-        App.u.download(App.u.slugFile(name) + ".json", JSON.stringify({ name: name, group: bank.group || "", exportedAt: new Date().toISOString(), questions: bank.questions }, null, 2));
+        App.u.download(App.u.slugFile(name) + ".json", JSON.stringify({ name: name, exportedAt: new Date().toISOString(), questions: bank.questions }, null, 2));
         ui.toast("Bank exported as JSON.", "ok");
       };
       pop.querySelector('[data-m="delete"]').onclick = function () {
@@ -376,7 +376,7 @@ App.views = App.views || {};
       const act = el.dataset.act, key = el.dataset.key;
       if (act === "import") App.router.go("#/import");
       else if (act === "builder") App.views.exam.openBuilder();
-      else if (act === "ai") App.views.importer.copyAIPrompt();
+      else if (act === "ai") App.router.go("#/generator");
       else if (act === "samples") loadSamples();
       else if (act === "progress") App.router.go("#/progress");
       else if (act === "review-due") {

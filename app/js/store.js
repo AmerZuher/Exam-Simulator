@@ -124,23 +124,13 @@ settings: { theme: "light", accent: "indigo", sidebarCollapsed: false, dailyGoal
       return true;
     },
 
-    addBank: function (name, questions, group) {
+    addBank: function (name, questions) {
       let final = name;
       let i = 2;
       while (this.state.banks[final]) { final = name + " (" + i + ")"; i++; }
-      this.state.banks[final] = { name: final, createdAt: Date.now(), group: group || "", questions: questions };
+      this.state.banks[final] = { name: final, createdAt: Date.now(), questions: questions };
       this.saveBanks();
       return final;
-    },
-
-    appendToBank: function (name, questions) {
-      const bank = this.state.banks[name];
-      if (!bank) return 0;
-      const offset = bank.questions.length;
-      questions.forEach(function (q, i) { q.id = offset + i + 1; });
-      bank.questions = bank.questions.concat(questions);
-      this.saveBanks();
-      return offset;
     },
 
     deleteBank: function (name) {

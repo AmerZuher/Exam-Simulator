@@ -18,6 +18,7 @@ window.App = window.App || {};
       if (name === "study") return { name: "study", params: { bankKey: parts.slice(1).join("/") } };
       if (name === "review") return { name: "review", params: { bankKey: parts.slice(1).join("/") } };
       if (name === "group") return { name: "group", params: { groupName: parts.slice(1).join("/") } };
+      if (name === "generator") return { name: "generator", params: {} };
       if (name === "import") return { name: "import", params: {} };
       if (name === "exam") return { name: "exam", params: {} };
       if (name === "results") return { name: "results", params: {} };

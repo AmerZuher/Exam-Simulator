@@ -222,10 +222,16 @@ mark { background: var(--warn-soft); color: inherit; border-radius: 3px; padding
   flex-direction: column;
   gap: 6px;
   padding: 0 14px 20px;
-  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border-right: 1px solid var(--line);
   transition: transform 0.35s var(--ease);
   z-index: 60;
+}
+
+@supports not (background: color-mix(in srgb, red 50%, blue)) {
+  .sidebar { background: var(--surface); }
 }
 
 /* Height matches --topbar-h exactly (border-box) so this rule sits at the same

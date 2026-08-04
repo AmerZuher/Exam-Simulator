@@ -73,6 +73,15 @@ window.App = window.App || {};
       }
     );
 
+    store.groupNames().forEach(function (g) {
+      const gst = store.groupStats(g);
+      list.push({
+        group: "Exam Group", icon: store.groupIcon(g), title: g,
+        sub: gst.banks + " exam" + (gst.banks === 1 ? "" : "s") + " · " + gst.questions + " questions",
+        run: function () { App.router.go("#/group/" + encodeURIComponent(g)); }
+      });
+    });
+
     names.forEach(function (n) {
       const st = store.bankStats(n);
       const sub = st.count + " questions" + (st.due ? " · " + st.due + " due" : "");

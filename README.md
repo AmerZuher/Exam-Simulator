@@ -6,15 +6,11 @@
 
 **Import any question bank. Study it with spaced repetition. Pass the real thing.**
 
-### [**Try the live demo →**](https://amerzuher.github.io/Exam-Simulator/)
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-6366f1.svg)](LICENSE)
-[![Live demo](https://img.shields.io/badge/demo-live-10b981)](https://amerzuher.github.io/Exam-Simulator/)
-![No build step](https://img.shields.io/badge/build%20step-none-10b981)
-![Zero dependencies](https://img.shields.io/badge/dependencies-zero-10b981)
-![Vanilla JS](https://img.shields.io/badge/stack-HTML%20%C2%B7%20CSS%20%C2%B7%20JS-f59e0b)
+![React](https://img.shields.io/badge/frontend-React%20%2B%20Vite-61dafb)
+![TypeScript](https://img.shields.io/badge/typed-TypeScript-3178c6)
+![Supabase](https://img.shields.io/badge/backend-Supabase-3ecf8e)
 ![PWA](https://img.shields.io/badge/PWA-installable-a855f7)
-![Data](https://img.shields.io/badge/your%20data-never%20leaves%20the%20browser-06b6d4)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/dashboard-dark.png">
@@ -38,6 +34,7 @@
 - [How it works](#how-it-works)
 - [Project structure](#project-structure)
 - [Your data](#your-data)
+- [Security](#security)
 - [Deploying your own copy](#deploying-your-own-copy)
 - [FAQ](#faq)
 - [Credits](#credits)
@@ -59,8 +56,9 @@ learn it:
    ("weak spots", "due for review", "never seen"), and a results page that
    tells you not just your score but *where the clock went*.
 
-It runs as a single static site — open `index.html` and it works. No server, no
-build step, no account, no tracking. Everything is stored in your browser.
+It's a React + Vite single-page app backed by Supabase (Postgres + Auth):
+sign in, and your banks, scores and review schedule sync to your account and
+follow you across devices.
 
 ## Features
 
@@ -80,7 +78,7 @@ build step, no account, no tracking. Everything is stored in your browser.
 - Optional countdown timer with auto-submit
 - Shuffle questions and/or options
 - Flag-for-review, resume an in-progress exam later
-- Custom exams mixing several banks
+- Custom exams mixing several banks, and a dedicated Practice mode
 
 </td><td width="50%" valign="top">
 
@@ -93,9 +91,12 @@ build step, no account, no tracking. Everything is stored in your browser.
 
 **Everything else**
 
-- Command palette (`Ctrl/⌘ K`) — fuzzy search banks, actions, and question text
-- Per-bank icon + colour, your own app name/logo/accent, installable PWA
-- One-click JSON backup & restore — your data, portable
+- Command palette (`Ctrl/⌘ K`) — fuzzy search banks, groups, and question text
+- Exam groups for organizing related banks, each with its own logo and stats
+- Google or email/password sign-in, per-account data isolation
+- Editable profile (name, role, avatar), theme + accent colour, daily goal
+  and review-size defaults, and pinned sidebar shortcuts — all per account
+- Installable PWA
 
 </td></tr>
 </table>
@@ -114,31 +115,37 @@ build step, no account, no tracking. Everything is stored in your browser.
 </table>
 
 <details>
-<summary>Settings — rename the app, upload a logo, pick your own accent colour</summary>
+<summary>Settings — profile, appearance, study defaults, and pinned sidebar shortcuts</summary>
 <br>
 <img src="docs/images/settings.png" alt="Settings page">
 </details>
 
 ## Quick start
 
-No install, no dependencies, no build step.
-
 ```bash
 git clone https://github.com/AmerZuher/Exam-Simulator.git
 cd Exam-Simulator
+npm install
 ```
 
-Then pick one:
+This app needs a Supabase project to sign in and store data — there's no
+offline/local-only mode. Two things before `npm run dev` will show real data:
 
-| Method                | How                                                                                                                                                                                                                                                                                                                                 |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Try it online**     | Skip setup entirely — the live build is hosted at **[amerzuher.github.io/Exam-Simulator](https://amerzuher.github.io/Exam-Simulator/)**.                                                                                                                                                                                          |
-| **Just open it**      | Double-click `index.html`. A tiny guided sample loads automatically.                                                                                                                                                                                                                                                                |
-| **Any static server** | `python3 -m http.server 8080` (or any static file server) from the project root, then visit `http://localhost:8080`. Serving over HTTP lets the app auto-load the full bundled sample set, including `Exams/ExamPro Feature Showcase.md` — a bank built specifically to demonstrate every supported question type and media format. |
+1. Create a Supabase project, then run
+   **[`migrations/000_fresh_install.sql`](migrations/000_fresh_install.sql)**
+   in its SQL Editor — this single script creates every table (profiles,
+   exam groups, exams, questions, study sessions, exam attempts, activity
+   log) with Row-Level Security already configured.
+2. Copy `.env.example` to `.env` and fill in your Supabase URL + anon key.
 
-There is nothing to `npm install`. The only thing resembling a dependency is the
-Inter font, loaded from Google Fonts over a `<link>` tag — everything else is
-plain HTML, CSS and JavaScript.
+Full walkthrough, including Google OAuth and what to run instead of
+`000_fresh_install.sql` if you already have data to keep: **[docs/SETUP.md](docs/SETUP.md)**.
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173).
 
 ## Bring your own question bank
 
@@ -186,7 +193,9 @@ You don't have to write questions by hand. Both the Dashboard and the Import
 page have a **"Generate with AI" / "Copy AI prompt"** button — click it and a
 prompt is copied to your clipboard, pre-written to make any AI chat (ChatGPT,
 Claude, Gemini, whatever you use) output questions in exactly the format
-ExamPro's parser expects.
+ExamPro's parser expects. There's also a **Beta** in-app Generator screen that
+previews the same flow end-to-end — it isn't wired to a live AI pipeline yet,
+so **Copy AI prompt** is the working path today.
 
 1. Click **Copy AI prompt**.
 2. Paste it into your AI chat of choice, then paste in your own source
@@ -228,102 +237,135 @@ open Study to see exactly how each part was parsed.
 
 ## How it works
 
-- **No framework.** Every view is a plain object with a `render(root)` function;
-  a ~50-line hash router swaps them in and out of `#view`.
-- **No backend.** All state — banks, attempt history, the SM-2 schedule,
-  per-question stats, settings, branding — lives in `localStorage`.
-- **No bundler.** `<script>` tags in a fixed load order in `index.html`. Open
-  the file, it works, including straight off disk via `file://`.
-- **Charts are hand-rolled inline SVG** (`app/js/charts.js`) with a real
-  crosshair tooltip and a colourblind-validated palette — no charting library.
-- **The importer is DOM-free** (`app/js/parser.js`) — pure string in, structured
-  questions out — so it's testable in plain Node with no browser involved.
-- **Installable.** `manifest.json` + `service-worker.js` make it a PWA; it
-  caches itself for offline use once you've visited it over HTTP once.
+- **React + TypeScript**, built with **Vite**. Views live in
+  `src/components/views/`, shared UI in `src/components/ui/`, cross-cutting
+  state (auth, theme, exams, groups) in `src/contexts/`.
+- **Supabase** is the backend — Postgres for storage, Supabase Auth for
+  sign-in (Google or email/password). All queries go through
+  `src/services/`, never straight from components.
+- **Row-Level Security** on every table means a signed-in user only ever
+  sees their own exams, questions, sessions and attempts — enforced by
+  Postgres, not app code.
+- **The database schema is plain SQL**, not an ORM — see
+  [`migrations/`](migrations) and [docs/SETUP.md](docs/SETUP.md) for which
+  script to run and when.
+- **The SM-2 scheduler** (`src/utils/srs.ts`) and the **markdown/JSON
+  importer** (`src/utils/parser.ts`) are both plain, DOM-free TypeScript —
+  unit-testable without a browser.
+- **Installable.** `public/manifest.json` + `public/service-worker.js` make
+  it a PWA that caches itself for offline use.
 
 ## Project structure
 
 ```
-index.html                  entry point — script load order lives here
-manifest.json                PWA manifest (rewritten live from your branding)
-service-worker.js            offline cache
-app/
-  css/app.css                 the entire design system — one file, CSS custom properties
-  js/
-    utils.js, store.js         small helpers · localStorage-backed state
-    srs.js                     SM-2 scheduler, per-question stats, streaks
-    parser.js                  markdown → question bank (DOM-free, unit-testable)
-    ui.js                      toasts, modals, rings, sparklines, media, bank badges
-    charts.js                  inline-SVG line / column / heatmap charts
-    branding.js                app name, logo, live favicon + manifest
-    palette.js                 Ctrl+K command palette
-    icons.js                   SVG icon registry
-    router.js, main.js         hash router · bootstrap
-    views/                     dashboard, importer, study, review, exam, results,
-                                progress, settings — one file per screen
-Exams/                        your question banks live here (bring your own)
-  ExamPro Feature Showcase.md  a working bank that demonstrates every format
-docs/images/                  README screenshots
+index.html                    Vite entry point
+public/
+  manifest.json                 PWA manifest
+  service-worker.js             offline cache
+src/
+  App.tsx, main.tsx             routing (hash-based) and bootstrap
+  components/
+    ui/                          shared primitives — Button, Input, Card, Modal, Badge, Dropdown, Toast
+    layout/                      AppShell, Sidebar, CommandPalette
+    views/                       Dashboard, Study, Review, Exam, Practice, Results,
+                                  Progress, Settings, Importer, Generator, Group, Login
+  contexts/                     Auth, Profile, Exams, Groups, DashboardStats, Theme, Toast, Dialog, ...
+  hooks/                        thin hooks over the contexts above
+  services/                     all Supabase calls — supabase.ts client, examsService,
+                                  profilesService, activityService
+  utils/
+    srs.ts                       SM-2 scheduler
+    parser.ts                    markdown/JSON → question bank (DOM-free, unit-testable)
+    icons.tsx, slug.ts, ...
+  styles/app.css                 the entire design system — one file, CSS custom properties
+migrations/                    Supabase SQL schema — run 000_fresh_install.sql for a new
+                                project, see docs/SETUP.md for upgrading an existing one
+Exams/                         a sample question bank demonstrating every supported format
+docs/                          setup, testing, and screenshots
 ```
 
 ## Your data
 
-Everything — banks, scores, review schedule, settings, your custom branding —
-is stored in `localStorage`, scoped to whatever origin you're serving the app
-from. Nothing is sent anywhere. There is no account, no sync, no analytics.
+Banks, scores, the review schedule, and your account preferences all live in
+your own Supabase project's Postgres database, scoped to your signed-in
+account via Row-Level Security — nobody else can read or write your rows,
+including other users of the same deployment.
 
-Settings → **Your data** gives you a one-click JSON export of the entire
-app state, and a matching restore. That file is your backup and your
-migration path to another browser or machine — there is no other kind of
-"cloud sync" here by design.
+Because it's your Supabase project, you own the database: back it up,
+inspect it with SQL, or export any individual bank as JSON from its menu on
+the Dashboard at any time.
+
+## Security
+
+The React app is treated as untrusted — it never holds elevated access.
+Every real protection lives in Postgres, on the database itself:
+
+- **Row-Level Security on every table.** `migrations/000_fresh_install.sql`
+  enables RLS on `profiles`, `exam_groups`, `exams`, `questions`,
+  `study_sessions`, `exam_attempts`, `activity_log`, and `question_perf`,
+  with every policy scoped to `auth.uid()` — a signed-in user's queries
+  physically cannot return or modify another user's rows, no matter what the
+  client sends. Child tables (`questions`, `study_sessions`, ...) inherit
+  ownership through the parent `exam`/`user_id`, checked the same way.
+- **Only the public anon key ships to the browser.** `VITE_SUPABASE_ANON_KEY`
+  is designed to be public — it has no privileges beyond what RLS grants the
+  authenticated user holding it. The Supabase `service_role` key (which
+  bypasses RLS) is never used client-side and isn't referenced anywhere in
+  `src/`.
+- **No unsafe HTML rendering.** Imported question banks (markdown/JSON,
+  potentially from someone else) are parsed into plain data and rendered as
+  ordinary React children, which auto-escapes. There's exactly one
+  `dangerouslySetInnerHTML` in the codebase (`src/utils/icons.tsx`), and it
+  only ever renders a hardcoded, developer-authored icon set — never
+  imported or user-supplied content.
+- **Your own AI provider key stays yours.** If you set one in Settings, it's
+  stored in `profiles.ai_api_key`, readable only by your own account under
+  the same RLS policy as the rest of your profile.
+
+This was verified with a dedicated security pass before this stack was
+published (RLS policies read line-by-line, every Supabase call site
+checked, auth/redirect flow traced) — no exploitable issue was found.
 
 ## Deploying your own copy
 
-It's a static site, so any static host works — GitHub Pages, Netlify, Vercel,
-Cloudflare Pages, or just a folder on any web server:
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/AmerZuher/Exam-Simulator&env=VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY,VITE_GOOGLE_CLIENT_ID&envDescription=Supabase%20project%20URL%2Fanon%20key%20(required)%20and%20Google%20OAuth%20client%20ID%20(optional)&envLink=https://github.com/AmerZuher/Exam-Simulator/blob/master/docs/SETUP.md&project-name=exampro&repository-name=exampro)
 
-**GitHub Pages**, straight from your existing branch, no extra branch needed:
+1. Set up a Supabase project and run
+   [`migrations/000_fresh_install.sql`](migrations/000_fresh_install.sql)
+2. Click **Deploy with Vercel** above (reads [`vercel.json`](vercel.json),
+   zero build config needed) and fill in the environment variables it asks
+   for
+3. Once it's live, add the deployed URL to **Supabase → Authentication →
+   URL Configuration → Redirect URLs** — sign-in fails without this step
 
-1. Push to your repo's default branch (`master` or `main`)
-2. Repo **Settings → Pages**
-3. **Build and deployment → Source:** `Deploy from a branch`
-4. **Branch:** your default branch, folder `/ (root)` → **Save**
-5. GitHub builds and serves it at `https://<you>.github.io/<repo>/` within a
-   minute or two — the banner at the top of the Pages settings page confirms
-   the URL once it's live
-
-Serving over HTTP (rather than `file://`) is what enables auto-loading the
-bundled sample banks and the PWA service worker — both are optional, the app
-works either way.
+Full walkthrough, including Google OAuth setup and deploying to other static
+hosts (Netlify, Cloudflare Pages, GitHub Pages): [docs/SETUP.md](docs/SETUP.md#8-deploy-to-vercel).
 
 ## FAQ
 
 **Does this need an internet connection?**
-No, after the first load (or never, if you use `file://`). The only network
-calls are: loading the Inter font, fetching bundled sample banks on first run
-when served over HTTP, and — if you use it — copying the AI-prompt text to
-your clipboard, which involves no network at all.
+Yes — banks, scores and the review schedule are stored in Supabase, so you
+need connectivity to sign in and sync. The app shell itself is installable
+as a PWA and caches for offline browsing of already-loaded data.
 
 **Can I use it on my phone?**
 Yes — it's responsive, and installable as a PWA from a browser's "Add to Home
-Screen" menu once it's served over HTTPS somewhere.
+Screen" menu.
+
+**Can multiple people use the same deployment?**
+Yes — each person signs in with their own account and Row-Level Security
+keeps everyone's banks, scores and progress isolated from everyone else's.
 
 **What happens if I clear my browser data?**
-Your banks and progress are gone unless you exported a backup first
-(Settings → Export everything). This is the tradeoff of "nothing leaves your
-browser" — back up before you clear site data.
-
-**Can multiple people use the same instance?**
-Not with shared state — there's no backend and no accounts. Each browser
-profile has its own independent data. Export/import is how you'd move a bank
-from one person to another.
+Nothing — your data lives in Supabase, not the browser. Sign in again on any
+device and it's all there.
 
 ## Credits
 
 The idea for this project started as a collaboration between **Kimi K3** and
-**DeepSeek V4 Pro**. The UI overhaul, feature buildout and testing in this
-version were done with **Claude Opus 5** and **Claude Sonnet 5** (Anthropic),
-via Claude Code.
+**DeepSeek V4 Pro**. The UI overhaul, feature buildout, and the React +
+Supabase rebuild in this version were done with **Claude Opus 5** and
+**Claude Sonnet 5** (Anthropic), via Claude Code.
 
 ## License
 

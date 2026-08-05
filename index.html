@@ -5,111 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ExamPro — Exam Simulator &amp; Q&amp;A Study Suite</title>
   <meta name="description" content="Import markdown question banks, run timed exam simulations, and study questions with answers in a dedicated preview page.">
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="/manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="app/css/app.css">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%236366f1'/%3E%3Cg fill='none' stroke='white' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='50' cy='50' r='34' stroke-width='6'/%3E%3Cpath stroke-width='6' d='M50 7v9M50 84v9M93 50h-9M16 50h-9'/%3E%3Cpath stroke-width='11' d='M31 52l14 14 25-30'/%3E%3C/g%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%236366f1'/%3E%3Cg fill='none' stroke='white' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='50' cy='50' r='34' stroke-width='6' stroke-dasharray='154 60' transform='rotate(-90 50 50)'/%3E%3Cpath stroke-width='11' d='M31 52l14 14 25-30'/%3E%3C/g%3E%3C/svg%3E">
 </head>
 <body data-theme="light">
-
-  <div class="shell">
-    <div class="scrim" id="scrim"></div>
-
-    <!-- ============ Sidebar ============ -->
-    <aside class="sidebar" id="sidebar">
-      <div class="brand">
-        <button class="brand-badge" id="brand-btn" aria-label="Open settings"><span id="brand-ico"></span></button>
-        <div style="min-width:0">
-          <div class="brand-name">ExamPro</div>
-          <div class="brand-sub">Study &amp; Simulate</div>
-        </div>
-      </div>
-
-      <nav id="side-nav" style="display:flex;flex-direction:column;gap:3px;overflow-y:auto"></nav>
-
-      <div class="sidebar-foot">
-        <button class="collapse-btn" id="sidebar-toggle" title="Collapse sidebar" aria-label="Toggle sidebar">
-          <span class="collapse-ico" id="collapse-ico"></span>
-          <span class="collapse-lbl">Collapse</span>
-        </button>
-      </div>
-    </aside>
-
-    <!-- ============ Main ============ -->
-    <div class="main">
-      <header class="topbar">
-        <div class="topbar-lead">
-          <button class="icon-btn hamburger" id="hamburger" aria-label="Open menu"></button>
-          <div style="min-width:0">
-            <div class="topbar-title" id="topbar-title">Dashboard</div>
-            <div class="topbar-sub" id="topbar-sub"></div>
-          </div>
-        </div>
-
-        <button class="cmdk-btn" id="cmdk-btn" title="Search everything (Ctrl+K)">
-          <span class="cmdk-ico" id="cmdk-ico"></span>
-          <span class="cmdk-lbl">Search banks, questions and actions…</span>
-          <kbd>Ctrl K</kbd>
-        </button>
-
-        <div class="topbar-actions">
-          <div class="timer-pill" id="exam-timer-pill">
-            <span class="timer-dot"></span>
-            <span class="timer-clock mono" id="topbar-clock">00:00:00</span>
-            <button class="timer-pause" id="timer-pause-btn" title="Pause / resume exam" aria-label="Pause or resume exam"></button>
-          </div>
-        </div>
-      </header>
-
-      <main class="content">
-        <div id="view"></div>
-      </main>
-    </div>
-  </div>
-
-  <!-- ============ Scripts (plain, ordered — works from file:// too) ============ -->
-  <script src="app/js/icons.js"></script>
-  <script src="app/js/utils.js"></script>
-  <script src="app/js/store.js"></script>
-  <script src="app/js/srs.js"></script>
-  <script src="app/js/parser.js"></script>
-  <script src="app/js/ui.js"></script>
-  <script src="app/js/components.js"></script>
-  <script src="app/js/branding.js"></script>
-  <script src="app/js/auth.js"></script>
-  <script src="app/js/charts.js"></script>
-  <script src="app/js/palette.js"></script>
-  <script src="app/js/examShared.js"></script>
-  <script src="app/js/views/dashboard.js"></script>
-  <script src="app/js/views/group.js"></script>
-  <script src="app/js/views/importer.js"></script>
-  <script src="app/js/views/aiGenerator.js"></script>
-  <script src="app/js/views/study.js"></script>
-  <script src="app/js/views/review.js"></script>
-  <script src="app/js/views/exam.js"></script>
-  <script src="app/js/views/practice.js"></script>
-  <script src="app/js/views/results.js"></script>
-  <script src="app/js/views/progress.js"></script>
-  <script src="app/js/views/settings.js"></script>
-  <script src="app/js/router.js"></script>
-  <script src="app/js/main.js"></script>
-  <script>
-    /* static chrome that needs icons before boot (branding overwrites the mark) */
-    document.getElementById("brand-ico").innerHTML = App.icon("logo", 20, 2);
-    document.getElementById("hamburger").innerHTML = App.icon("menu", 17, 2);
-    document.getElementById("collapse-ico").innerHTML = App.icon("chevL", 16, 2.2);
-    document.getElementById("timer-pause-btn").innerHTML = App.icon("pause", 12, 2.6);
-    document.getElementById("cmdk-ico").innerHTML = App.icon("search", 15, 2);
-    document.getElementById("cmdk-btn").onclick = function () { App.palette.open(); };
-
-    /* PWA: register service worker if served over http */
-    if ("serviceWorker" in navigator && location.protocol !== "file:") {
-      navigator.serviceWorker.register("service-worker.js");
-    }
-  </script>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

@@ -1,0 +1,24 @@
+{
+  "name": "exampro-react",
+  "version": "2.0.0",
+  "type": "module",
+  "description": "ExamPro: Import question banks, study with spaced repetition, pass the real thing.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.1.0",
+    "typescript": "^5.2.0",
+    "vite": "^6.4.3"
+  }
+}

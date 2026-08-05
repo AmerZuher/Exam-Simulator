@@ -16,3 +16,14 @@ Thumbs.db
 
 # local-only scratch files
 *.local.*
+
+# Node & Build
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+*.tsbuildinfo
+
+# Dev
+.vite

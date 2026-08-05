@@ -8,23 +8,10 @@
 
   <!-- badge background, edge-to-edge -->
   <rect width="100" height="100" rx="24" fill="url(#bg)"/>
-  <circle cx="24" cy="20" r="38" fill="#ffffff" opacity="0.07"/>
 
-  <!-- timer ring: ExamPro is a *timed* simulator -->
-  <circle cx="50" cy="47" r="30" fill="none" stroke="#ffffff" stroke-width="5" opacity="0.9"/>
-
-  <!-- clock ticks at N/E/S/W -->
-  <g stroke="#ffffff" stroke-width="5" stroke-linecap="round" opacity="0.9">
-    <path d="M50 9v8"/>
-    <path d="M50 77v8"/>
-    <path d="M88 47h-8"/>
-    <path d="M12 47h8"/>
+  <!-- progress ring: same mark as the app favicon / PWA icon -->
+  <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="50" cy="50" r="34" stroke-width="6" stroke-dasharray="154 60" transform="rotate(-90 50 50)" opacity="0.95"/>
+    <path stroke-width="11" d="M31 52l14 14 25-30"/>
   </g>
-
-  <!-- bold pass checkmark, the whole point of the app -->
-  <path d="M33 48l12 12 22-26" fill="none" stroke="#ffffff" stroke-width="9.5"
-        stroke-linecap="round" stroke-linejoin="round"/>
-
-  <!-- underline: a graded answer line -->
-  <rect x="30" y="86" width="40" height="5" rx="2.5" fill="#ffffff" opacity="0.55"/>
 </svg>

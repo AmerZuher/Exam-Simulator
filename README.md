@@ -1,8 +1,6 @@
 <div align="center">
 
-<img src="docs/images/logo.svg" width="88" height="88" alt="ExamPro logo">
 
-# ExamPro
 
 **Import any question bank. Study it with spaced repetition. Pass the real thing.**
 
@@ -11,6 +9,10 @@
 ![TypeScript](https://img.shields.io/badge/typed-TypeScript-3178c6)
 ![Supabase](https://img.shields.io/badge/backend-Supabase-3ecf8e)
 ![PWA](https://img.shields.io/badge/PWA-installable-a855f7)
+[![Live Demo](https://img.shields.io/badge/demo-live-22c55e)](https://exam-simulator-amer-zuhers-projects.vercel.app)
+
+**[🚀 Try the live demo](https://exam-simulator-amer-zuhers-projects.vercel.app)**
+
 <img width="1376" height="768" alt="ExamPRO_coverIMG" src="https://github.com/user-attachments/assets/4992243b-3df6-4cb4-ab4b-2ec26abd63ef" /></picture>
 
 <picture>
@@ -58,6 +60,9 @@ learn it:
 It's a React + Vite single-page app backed by Supabase (Postgres + Auth):
 sign in, and your banks, scores and review schedule sync to your account and
 follow you across devices.
+
+👉 **[Try it now — no install needed](https://exam-simulator-amer-zuhers-projects.vercel.app)**,
+or run your own copy against your own Supabase project (see below).
 
 ## Features
 
@@ -120,6 +125,12 @@ follow you across devices.
 </details>
 
 ## Quick start
+
+Want to just use it? Skip everything below and go straight to the
+**[live production instance](https://exam-simulator-amer-zuhers-projects.vercel.app)** —
+sign in and start importing question banks immediately.
+
+To run your own copy locally:
 
 ```bash
 git clone https://github.com/AmerZuher/Exam-Simulator.git
@@ -257,30 +268,7 @@ open Study to see exactly how each part was parsed.
 ## Project structure
 
 ```
-index.html                    Vite entry point
-public/
-  manifest.json                 PWA manifest
-  service-worker.js             offline cache
-src/
-  App.tsx, main.tsx             routing (hash-based) and bootstrap
-  components/
-    ui/                          shared primitives — Button, Input, Card, Modal, Badge, Dropdown, Toast
-    layout/                      AppShell, Sidebar, CommandPalette
-    views/                       Dashboard, Study, Review, Exam, Practice, Results,
-                                  Progress, Settings, Importer, Generator, Group, Login
-  contexts/                     Auth, Profile, Exams, Groups, DashboardStats, Theme, Toast, Dialog, ...
-  hooks/                        thin hooks over the contexts above
-  services/                     all Supabase calls — supabase.ts client, examsService,
-                                  profilesService, activityService
-  utils/
-    srs.ts                       SM-2 scheduler
-    parser.ts                    markdown/JSON → question bank (DOM-free, unit-testable)
-    icons.tsx, slug.ts, ...
-  styles/app.css                 the entire design system — one file, CSS custom properties
-migrations/                    Supabase SQL schema — run 000_fresh_install.sql for a new
-                                project, see docs/SETUP.md for upgrading an existing one
-Exams/                         a sample question bank demonstrating every supported format
-docs/                          setup, testing, and screenshots
+index.html                    Vite entry pointpublic/  manifest.json                 PWA manifest  service-worker.js             offline cachesrc/  App.tsx, main.tsx             routing (hash-based) and bootstrap  components/    ui/                          shared primitives — Button, Input, Card, Modal, Badge, Dropdown, Toast    layout/                      AppShell, Sidebar, CommandPalette    views/                       Dashboard, Study, Review, Exam, Practice, Results,                                  Progress, Settings, Importer, Generator, Group, Login  contexts/                     Auth, Profile, Exams, Groups, DashboardStats, Theme, Toast, Dialog, ...  hooks/                        thin hooks over the contexts above  services/                     all Supabase calls — supabase.ts client, examsService,                                  profilesService, activityService  utils/    srs.ts                       SM-2 scheduler    parser.ts                    markdown/JSON → question bank (DOM-free, unit-testable)    icons.tsx, slug.ts, ...  styles/app.css                 the entire design system — one file, CSS custom propertiesmigrations/                    Supabase SQL schema — run 000_fresh_install.sql for a new                                project, see docs/SETUP.md for upgrading an existing oneExams/                         a sample question bank demonstrating every supported formatdocs/                          setup, testing, and screenshots                       setup, testing, and screenshots
 ```
 
 ## Your data
@@ -341,6 +329,11 @@ Full walkthrough, including Google OAuth setup and deploying to other static
 hosts (Netlify, Cloudflare Pages, GitHub Pages): [docs/SETUP.md](docs/SETUP.md#8-deploy-to-vercel).
 
 ## FAQ
+
+**Is there a live version I can just use?**
+Yes — [exam-simulator-amer-zuhers-projects.vercel.app](https://exam-simulator-amer-zuhers-projects.vercel.app)
+is the production instance. Sign in with Google or email/password and it's
+ready to go.
 
 **Does this need an internet connection?**
 Yes — banks, scores and the review schedule are stored in Supabase, so you

@@ -11,12 +11,11 @@
 ![TypeScript](https://img.shields.io/badge/typed-TypeScript-3178c6)
 ![Supabase](https://img.shields.io/badge/backend-Supabase-3ecf8e)
 ![PWA](https://img.shields.io/badge/PWA-installable-a855f7)
+<img width="1376" height="768" alt="ExamPRO_coverIMG" src="https://github.com/user-attachments/assets/4992243b-3df6-4cb4-ab4b-2ec26abd63ef" /></picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/dashboard-dark.png">
   <source media="(prefers-color-scheme: light)" srcset="docs/images/dashboard-light.png">
-  <img src="docs/images/dashboard-light.png" alt="ExamPro dashboard" width="820">
-</picture>
 
 </div>
 
